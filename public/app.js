@@ -281,7 +281,9 @@ function openInClaude() {
 function openInCopilot() {
     const prompt = document.getElementById("output-1-content").textContent;
     if (!prompt) return;
-    window.open("https://copilot.microsoft.com/?q=" + encodeURIComponent(prompt), "_blank");
+    navigator.clipboard.writeText(prompt).then(() => {
+        window.open("https://copilot.microsoft.com/", "_blank");
+    });
 }
 
 function openBuildInClaude() {
