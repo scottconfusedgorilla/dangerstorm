@@ -128,6 +128,12 @@ header .tagline {
     margin-top: 4px;
 }
 
+.build-number {
+    color: var(--border);
+    font-size: 0.65rem;
+    margin-top: 2px;
+}
+
 /* Auth Modal */
 .modal-overlay {
     position: fixed;

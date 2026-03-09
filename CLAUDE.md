@@ -1,5 +1,8 @@
 # DangerStorm.net — Design Brief
 
+## BUILD NUMBER
+There is a visible build number on the home screen in `public/index.html` (class `build-number`). **Increment the build number on every deploy.** Format: `build NNN`. Current: `build 004`.
+
 You are building the MVP of DangerStorm.net — a conversational tool that takes a product idea and a domain name and generates a professional product pitch deck, similar to the Atomic Maple product portfolio format.
 
 ## WHAT IT DOES
