@@ -364,7 +364,7 @@ function addMessage(role, text) {
     div.className = `message ${role}`;
     div.textContent = text;
     messagesEl.appendChild(div);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+    window.scrollTo(0, document.body.scrollHeight);
     return div;
 }
 
@@ -382,7 +382,7 @@ function addMessageWithAttachment(role, text, fileName) {
     div.appendChild(textNode);
 
     messagesEl.appendChild(div);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+    window.scrollTo(0, document.body.scrollHeight);
     return div;
 }
 
@@ -392,7 +392,7 @@ function addTypingIndicator() {
     div.id = "typing-indicator";
     div.innerHTML = '<span class="typing-dots">Thinking</span>';
     messagesEl.appendChild(div);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+    window.scrollTo(0, document.body.scrollHeight);
     return div;
 }
 
@@ -565,7 +565,7 @@ async function sendMessage() {
                                 .replace(/===OUTPUT_\d_(?:START|END)===/g, "")
                                 .trim();
                             msgDiv.textContent = displayText;
-                            messagesEl.scrollTop = messagesEl.scrollHeight;
+                            window.scrollTo(0, document.body.scrollHeight);
                         }
                         if (data.error) {
                             msgDiv.textContent = "Something went wrong. Try again.";

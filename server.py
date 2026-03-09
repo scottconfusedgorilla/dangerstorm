@@ -209,6 +209,7 @@ Generate a ready-to-paste prompt that a user can give to Claude Code (Anthropic'
 - Never show the question sequence as a list.
 - If the user says something off-topic, gently redirect: "Love the energy, but let's stay focused. What's the product?"
 - Keep your conversational responses SHORT — 1-3 sentences max before asking the next question.
+- CRITICAL: When generating outputs, you MUST generate ALL SIX outputs in a single response. Do not stop after output 3 — outputs 4, 5, and 6 are required. Keep HTML mockups concise but complete (under 100 lines each). The build prompt can be brief (under 30 lines). Do not truncate or skip any output.
 
 ## IMPORTANT CONTEXT:
 You have ALREADY said your opener: "Alright, hit me. What's the product? Give me the elevator pitch in one or two sentences, and what's the domain?"
@@ -232,7 +233,7 @@ def chat():
     try:
         response = client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=16000,
+            max_tokens=32000,
             system=SYSTEM_PROMPT,
             messages=messages,
         )
@@ -269,7 +270,7 @@ def chat_stream():
         try:
             with client.messages.stream(
                 model="claude-sonnet-4-6",
-                max_tokens=16000,
+                max_tokens=32000,
                 system=SYSTEM_PROMPT,
                 messages=api_messages,
             ) as stream:
