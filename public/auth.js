@@ -80,21 +80,47 @@ async function signInWithGoogle() {
 }
 
 async function signInWithPassword(email, password) {
-    const { error } = await sbClient.auth.signInWithPassword({ email, password });
-    if (error) {
-        console.error("Email sign-in error:", error);
-        return { error };
+    console.log("[auth] signInWithPassword called, sbClient:", !!sbClient);
+    const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Sign-in timed out after 15 seconds. Supabase may be unreachable.")), 15000)
+    );
+    try {
+        const result = await Promise.race([
+            sbClient.auth.signInWithPassword({ email, password }),
+            timeoutPromise,
+        ]);
+        console.log("[auth] signInWithPassword result:", result);
+        if (result.error) {
+            console.error("[auth] sign-in error:", result.error);
+            return { error: result.error };
+        }
+        return { error: null };
+    } catch (err) {
+        console.error("[auth] signInWithPassword threw:", err);
+        return { error: { message: err.message } };
     }
-    return { error: null };
 }
 
 async function signUpWithPassword(email, password) {
-    const { error } = await sbClient.auth.signUp({ email, password });
-    if (error) {
-        console.error("Email sign-up error:", error);
-        return { error };
+    console.log("[auth] signUpWithPassword called, sbClient:", !!sbClient);
+    const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Sign-up timed out after 15 seconds. Supabase may be unreachable.")), 15000)
+    );
+    try {
+        const result = await Promise.race([
+            sbClient.auth.signUp({ email, password }),
+            timeoutPromise,
+        ]);
+        console.log("[auth] signUpWithPassword result:", result);
+        if (result.error) {
+            console.error("[auth] sign-up error:", result.error);
+            return { error: result.error };
+        }
+        return { error: null };
+    } catch (err) {
+        console.error("[auth] signUpWithPassword threw:", err);
+        return { error: { message: err.message } };
     }
-    return { error: null };
 }
 
 async function signOut() {
