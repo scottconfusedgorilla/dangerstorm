@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — DangerStorm</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="header-row">
+                <a href="/" style="text-decoration: none;"><h1>DANGER<span class="accent">STORM</span></h1></a>
+                <div id="auth-bar"></div>
+            </div>
+            <p class="tagline">Your product ideas</p>
+        </header>
+
+        <div id="dashboard-container">
+            <div class="dashboard-header">
+                <div class="idea-count" id="idea-count"></div>
+                <a href="/" class="action-btn primary">New Idea</a>
+            </div>
+
+            <div id="ideas-loading" class="dashboard-loading">Loading your ideas...</div>
+            <div id="ideas-empty" class="dashboard-empty hidden">
+                <p>No ideas yet. Start your first one!</p>
+                <a href="/" class="action-btn primary">Create your first idea</a>
+            </div>
+            <div id="ideas-grid" class="ideas-grid"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="auth.js"></script>
+    <script src="api.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>

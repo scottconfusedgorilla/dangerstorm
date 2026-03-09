@@ -9,7 +9,10 @@
 <body>
     <div id="app">
         <header>
-            <h1>DANGER<span class="accent">STORM</span></h1>
+            <div class="header-row">
+                <h1>DANGER<span class="accent">STORM</span></h1>
+                <div id="auth-bar"></div>
+            </div>
             <p class="tagline">One idea. One domain. One deck.</p>
         </header>
 
@@ -19,6 +22,10 @@
             <div id="file-preview" class="hidden">
                 <span id="file-preview-name"></span>
                 <button id="file-remove-btn" title="Remove file">&times;</button>
+            </div>
+
+            <div id="chat-actions">
+                <button id="chat-start-over-btn" class="chat-action-btn">Start Over</button>
             </div>
 
             <div id="input-area">
@@ -45,17 +52,23 @@
 
         <div id="outputs-container" class="hidden">
             <div class="output-actions">
+                <button id="save-idea-btn" class="action-btn primary">Save Idea</button>
                 <button id="download-all-btn" class="action-btn primary">Download All</button>
                 <button id="refine-btn" class="action-btn">Refine</button>
                 <button id="start-over-btn" class="action-btn">Start Over</button>
             </div>
+            <div id="save-status" class="save-status hidden"></div>
 
             <div class="output-block" id="output-1">
                 <div class="output-header">
                     <h3>PITCH DECK PROMPT</h3>
-                    <button class="copy-btn" data-target="output-1-content">Copy</button>
+                    <div class="output-header-actions">
+                        <button id="generate-ppt-btn" class="ppt-btn">Generate PPT</button>
+                        <button class="copy-btn" data-target="output-1-content">Copy</button>
+                    </div>
                 </div>
                 <pre id="output-1-content" class="output-content"></pre>
+                <div id="ppt-status" class="ppt-status hidden"></div>
             </div>
 
             <div class="output-block" id="output-4">
@@ -113,6 +126,10 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS@3.12.0/dist/pptxgen.bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="auth.js"></script>
+    <script src="api.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

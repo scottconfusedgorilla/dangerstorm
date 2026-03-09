@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account — DangerStorm</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="header-row">
+                <a href="/" style="text-decoration: none;"><h1>DANGER<span class="accent">STORM</span></h1></a>
+                <div id="auth-bar"></div>
+            </div>
+            <p class="tagline">Your account</p>
+        </header>
+
+        <div id="account-container">
+            <div class="account-card">
+                <h2 id="account-name"></h2>
+                <p id="account-email" class="text-muted"></p>
+
+                <div class="account-tier" id="account-tier-section"></div>
+
+                <div class="account-actions">
+                    <a href="/dashboard" class="action-btn">Dashboard</a>
+                    <button id="sign-out-account-btn" class="action-btn danger">Sign Out</button>
+                </div>
+            </div>
+
+            <div id="account-message" class="save-status hidden"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="auth.js"></script>
+    <script src="api.js"></script>
+    <script src="account.js"></script>
+</body>
+</html>

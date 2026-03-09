@@ -147,8 +147,8 @@ refineBtn.addEventListener("click", () => {
     inputEl.focus();
 });
 
-// Start over button
-startOverBtn.addEventListener("click", () => {
+// Start over (shared logic)
+function doStartOver() {
     conversationHistory = [];
     clearSession();
     clearPendingFile();
@@ -157,7 +157,13 @@ startOverBtn.addEventListener("click", () => {
     inputEl.placeholder = "Type your answer...";
     inputEl.focus();
     initConversation();
-});
+}
+
+// Start over button (outputs section)
+startOverBtn.addEventListener("click", doStartOver);
+
+// Start over button (chat section)
+document.getElementById("chat-start-over-btn").addEventListener("click", doStartOver);
 
 // Download all button
 document.getElementById("download-all-btn").addEventListener("click", async () => {
@@ -185,6 +191,173 @@ document.getElementById("download-all-btn").addEventListener("click", async () =
     a.click();
     URL.revokeObjectURL(url);
 });
+
+// Generate PPT button
+document.getElementById("generate-ppt-btn").addEventListener("click", async () => {
+    const btn = document.getElementById("generate-ppt-btn");
+    const status = document.getElementById("ppt-status");
+    const deckPrompt = document.getElementById("output-1-content").textContent;
+
+    if (!deckPrompt) return;
+
+    btn.disabled = true;
+    btn.textContent = "Generating...";
+    btn.classList.add("generating");
+    status.textContent = "Sending deck prompt to AI for structured slide data...";
+    status.className = "ppt-status";
+
+    try {
+        const response = await fetch("/api/generate-ppt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ deckPrompt }),
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        status.textContent = "Building PowerPoint file...";
+        buildPptx(data);
+
+        status.textContent = "PPT downloaded!";
+        setTimeout(() => status.classList.add("hidden"), 3000);
+    } catch (err) {
+        status.textContent = "Failed to generate PPT: " + err.message;
+        status.className = "ppt-status error";
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "Generate PPT";
+        btn.classList.remove("generating");
+    }
+});
+
+function buildPptx(data) {
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_WIDE";
+    pptx.author = "DangerStorm";
+    pptx.title = data.title || "Pitch Deck";
+
+    const p = data.palette || {};
+    const darkBg = p.dark || "#1a1a2e";
+    const primaryColor = p.primary || "#e94560";
+    const lightBg = p.light || "#f5f5f5";
+    const textLight = p.text_light || "#ffffff";
+    const textDark = p.text_dark || "#1a1a2e";
+
+    for (const slide of data.slides) {
+        const s = pptx.addSlide();
+
+        if (slide.type === "title" || slide.type === "closing") {
+            // Dark background slides
+            s.background = { color: darkBg };
+
+            s.addText(slide.title || "", {
+                x: 0.5, y: 1.5, w: "90%", h: 1.5,
+                fontSize: 44, fontFace: "Trebuchet MS",
+                color: primaryColor, bold: true, align: "center",
+            });
+
+            s.addText(slide.subtitle || "", {
+                x: 0.5, y: 3.2, w: "90%", h: 0.8,
+                fontSize: 22, fontFace: "Calibri",
+                color: textLight, align: "center",
+            });
+
+            if (slide.footer) {
+                s.addText(slide.footer, {
+                    x: 0.5, y: 4.8, w: "90%", h: 0.5,
+                    fontSize: 14, fontFace: "Calibri",
+                    color: textLight, align: "center", italic: true,
+                });
+            }
+        } else if (slide.type === "steps") {
+            // Steps/How it works slide
+            s.background = { color: lightBg };
+
+            s.addText(slide.heading || "", {
+                x: 0.5, y: 0.3, w: "90%", h: 0.8,
+                fontSize: 32, fontFace: "Trebuchet MS",
+                color: darkBg, bold: true,
+            });
+
+            const steps = slide.steps || [];
+            const stepWidth = 11 / Math.max(steps.length, 1);
+            steps.forEach((step, i) => {
+                const xPos = 0.5 + i * stepWidth;
+
+                s.addText(step.icon || String(i + 1), {
+                    x: xPos, y: 1.4, w: stepWidth - 0.3, h: 0.8,
+                    fontSize: 28, fontFace: "Trebuchet MS",
+                    color: primaryColor, bold: true,
+                });
+
+                s.addText(step.title || "", {
+                    x: xPos, y: 2.2, w: stepWidth - 0.3, h: 0.6,
+                    fontSize: 18, fontFace: "Calibri",
+                    color: darkBg, bold: true,
+                });
+
+                s.addText(step.description || "", {
+                    x: xPos, y: 2.8, w: stepWidth - 0.3, h: 1.2,
+                    fontSize: 14, fontFace: "Calibri",
+                    color: textDark,
+                });
+            });
+        } else {
+            // Content slides
+            s.background = { color: lightBg };
+
+            s.addText(slide.heading || "", {
+                x: 0.5, y: 0.3, w: "90%", h: 0.8,
+                fontSize: 32, fontFace: "Trebuchet MS",
+                color: darkBg, bold: true,
+            });
+
+            const bullets = slide.bullets || [];
+            const bulletText = bullets.map((b) => ({
+                text: b,
+                options: { bullet: { code: "25CF", color: primaryColor }, indentLevel: 0 },
+            }));
+
+            s.addText(bulletText, {
+                x: 0.5, y: 1.3, w: "55%", h: 3.5,
+                fontSize: 18, fontFace: "Calibri",
+                color: textDark, lineSpacingMultiple: 1.5,
+                valign: "top",
+            });
+
+            if (slide.callout) {
+                s.addShape(pptx.ShapeType.roundRect, {
+                    x: 7.5, y: 1.5, w: 4.5, h: 2.5,
+                    fill: { color: darkBg }, rectRadius: 0.2,
+                });
+
+                s.addText(slide.callout, {
+                    x: 7.7, y: 1.7, w: 4.1, h: 2.1,
+                    fontSize: 18, fontFace: "Calibri",
+                    color: primaryColor, bold: true,
+                    align: "center", valign: "middle",
+                });
+            }
+        }
+
+        // Branding on every slide
+        const isDark = slide.type === "title" || slide.type === "closing";
+        s.addText("Manage your pitch ideas at dangerstorm.net", {
+            x: 6.5, y: 5.1, w: 6, h: 0.3,
+            fontSize: 8, fontFace: "Calibri",
+            color: isDark ? textLight : textDark,
+            align: "right", italic: true,
+            transparency: 50,
+        });
+    }
+
+    const fileName = (data.title || "pitch-deck").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    pptx.writeFile({ fileName: `${fileName}-pitch-deck.pptx` });
+}
 
 function addMessage(role, text) {
     const div = document.createElement("div");
@@ -464,5 +637,68 @@ function restoreSession() {
     inputEl.focus();
 }
 
+// ---- Save Idea ----
+let currentIdeaId = null;
+let currentVersionNumber = null;
+
+document.getElementById("save-idea-btn").addEventListener("click", async () => {
+    if (!requireAuth("save")) return;
+
+    const limit = checkIdeaLimit();
+    if (!limit.allowed) {
+        if (limit.reason === "limit_reached") {
+            showSaveStatus(`You've hit the ${limit.max}-idea limit. Upgrade to Pro for more.`, "error");
+        }
+        return;
+    }
+
+    const btn = document.getElementById("save-idea-btn");
+    const outputs = {
+        output1: document.getElementById("output-1-content").textContent,
+        output2: document.getElementById("output-2-content").textContent,
+        output3: document.getElementById("output-3-content").textContent,
+        output4: document.getElementById("output-4-content").textContent,
+        output5: document.getElementById("output-5-content").textContent,
+        output6: document.getElementById("output-6-content").textContent,
+    };
+
+    // Try to extract domain and product name from the deck prompt
+    const deckText = outputs.output1;
+    const domainMatch = deckText.match(/domain[:\s]+([a-z0-9.-]+\.[a-z]{2,})/i);
+    const domain = domainMatch ? domainMatch[1] : "None";
+    const nameMatch = deckText.match(/product\s*name[:\s]+([^\n]+)/i);
+    const productName = nameMatch ? nameMatch[1].trim() : "Untitled Idea";
+
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+
+    try {
+        const result = await saveIdea(domain, productName, "", conversationHistory, outputs);
+        currentIdeaId = result.ideaId;
+        currentVersionNumber = result.versionNumber;
+        showSaveStatus("Idea saved! Find it in your Dashboard.", "success");
+        // Refresh profile to get updated idea_count
+        currentProfile = await fetchProfile();
+    } catch (err) {
+        showSaveStatus("Failed to save: " + err.message, "error");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "Save Idea";
+    }
+});
+
+function showSaveStatus(message, type) {
+    const el = document.getElementById("save-status");
+    el.textContent = message;
+    el.className = `save-status ${type}`;
+    setTimeout(() => el.classList.add("hidden"), 5000);
+}
+
+// ---- Auth callback ----
+function onAuthChange(user, profile) {
+    // Could refresh UI elements based on auth state
+}
+
 // Boot
+initSupabase();
 restoreSession();

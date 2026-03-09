@@ -1,4 +1,5 @@
 import os
+from functools import wraps
 from flask import Flask, request, jsonify, send_from_directory, Response
 from dotenv import load_dotenv
 import anthropic
@@ -10,6 +11,58 @@ app = Flask(__name__, static_folder="public", static_url_path="")
 
 # Let the Anthropic client pick up ANTHROPIC_API_KEY from env automatically
 client = anthropic.Anthropic()
+
+# Supabase setup (server-side with service key for trusted operations)
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
+
+_supabase_client = None
+
+
+def get_supabase():
+    global _supabase_client
+    if _supabase_client is None:
+        from supabase import create_client
+        _supabase_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    return _supabase_client
+
+
+def get_supabase_user(access_token):
+    """Verify a Supabase JWT and return the user."""
+    from supabase import create_client
+    # Create a client with the user's token to verify it
+    user_client = create_client(
+        SUPABASE_URL,
+        os.getenv("SUPABASE_ANON_KEY", ""),
+    )
+    user_client.auth.set_session(access_token, "")
+    try:
+        user_resp = user_client.auth.get_user(access_token)
+        return user_resp.user
+    except Exception:
+        return None
+
+
+def require_auth(f):
+    """Decorator to require Supabase auth on an endpoint."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            return jsonify({"error": "Authentication required"}), 401
+        token = auth_header.split(" ", 1)[1]
+        user = get_supabase_user(token)
+        if not user:
+            return jsonify({"error": "Invalid or expired token"}), 401
+        request.user = user
+        return f(*args, **kwargs)
+    return decorated
+
+
+# Stripe setup
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "")
 
 SYSTEM_PROMPT = """You are DangerStorm — a confident, direct, product-savvy AI that helps people turn product ideas into professional pitch deck prompts in under 90 seconds.
 
@@ -227,6 +280,286 @@ def chat_stream():
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return Response(generate(), mimetype="text/event-stream")
+
+
+PPT_SYSTEM_PROMPT = """You are a slide deck data generator. Given a pitch deck prompt, extract and generate structured JSON data for an 8-slide pitch deck.
+
+Return ONLY valid JSON with this exact structure — no markdown, no code fences, no explanation:
+
+{
+  "title": "Product Name",
+  "palette": {
+    "dark": "#1a1a2e",
+    "primary": "#e94560",
+    "secondary": "#0f3460",
+    "accent": "#16213e",
+    "light": "#f5f5f5",
+    "text_light": "#ffffff",
+    "text_dark": "#1a1a2e"
+  },
+  "slides": [
+    {
+      "type": "title",
+      "title": "Product Name",
+      "subtitle": "Tagline here",
+      "footer": "Author | website | date"
+    },
+    {
+      "type": "content",
+      "heading": "THE PROBLEM",
+      "bullets": ["Pain point 1", "Pain point 2", "Pain point 3"],
+      "callout": "Optional stat or highlight"
+    },
+    {
+      "type": "content",
+      "heading": "THE SOLUTION",
+      "bullets": ["Key insight", "What it does", "Why it's different"],
+      "callout": "The key differentiator"
+    },
+    {
+      "type": "steps",
+      "heading": "HOW IT WORKS",
+      "steps": [
+        {"icon": "1", "title": "Step One", "description": "What happens"},
+        {"icon": "2", "title": "Step Two", "description": "What happens"},
+        {"icon": "3", "title": "Step Three", "description": "What happens"}
+      ]
+    },
+    {
+      "type": "content",
+      "heading": "WHO BUYS IT",
+      "bullets": ["Primary audience", "Secondary audience", "Why they pay"],
+      "callout": null
+    },
+    {
+      "type": "content",
+      "heading": "REVENUE MODEL",
+      "bullets": ["How it makes money", "Pricing approach", "Unit economics"],
+      "callout": null
+    },
+    {
+      "type": "content",
+      "heading": "STATUS & PROOF",
+      "bullets": ["Current status", "Validation", "What's next"],
+      "callout": null
+    },
+    {
+      "type": "closing",
+      "title": "Product Name",
+      "subtitle": "Tagline repeated",
+      "footer": "Contact info"
+    }
+  ]
+}
+
+Pick a bold, category-appropriate color palette. Make the content punchy and professional."""
+
+
+@app.route("/api/generate-ppt", methods=["POST"])
+def generate_ppt():
+    data = request.json
+    deck_prompt = data.get("deckPrompt", "")
+
+    if not deck_prompt:
+        return jsonify({"error": "No deck prompt provided"}), 400
+
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=4000,
+            system=PPT_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": deck_prompt}],
+        )
+
+        raw = response.content[0].text.strip()
+        # Strip markdown code fences if present
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1]
+            if raw.endswith("```"):
+                raw = raw[:-3].strip()
+
+        slide_data = json.loads(raw)
+        return jsonify(slide_data)
+
+    except json.JSONDecodeError:
+        return jsonify({"error": "Failed to parse slide data from AI"}), 500
+    except anthropic.APIError as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/dashboard")
+def dashboard():
+    return send_from_directory("public", "dashboard.html")
+
+
+@app.route("/account")
+def account():
+    return send_from_directory("public", "account.html")
+
+
+@app.route("/api/save-idea", methods=["POST"])
+@require_auth
+def save_idea():
+    data = request.json
+    user_id = request.user.id
+    domain = data.get("domain", "None") or "None"
+    product_name = data.get("productName", "Untitled Idea")
+    tagline = data.get("tagline", "")
+    conversation = data.get("conversation", [])
+    outputs = data.get("outputs", {})
+
+    sb = get_supabase()
+
+    # Check idea limit
+    profile = sb.table("profiles").select("tier, idea_count").eq("id", user_id).single().execute()
+    if not profile.data:
+        return jsonify({"error": "Profile not found"}), 404
+
+    tier = profile.data["tier"]
+    idea_count = profile.data["idea_count"]
+    max_ideas = 999 if tier == "pro" else 5
+
+    # Check if this domain already has an idea (update, not count against limit)
+    existing = sb.table("ideas").select("id").eq("user_id", user_id).eq("domain", domain).execute()
+    is_new = len(existing.data) == 0
+
+    if is_new and idea_count >= max_ideas:
+        return jsonify({"error": f"Idea limit reached ({max_ideas}). Upgrade to Pro for more."}), 403
+
+    # Upsert idea
+    if is_new:
+        idea_result = sb.table("ideas").insert({
+            "user_id": user_id,
+            "domain": domain,
+            "product_name": product_name,
+            "tagline": tagline,
+            "status": "complete",
+        }).execute()
+        idea_id = idea_result.data[0]["id"]
+    else:
+        idea_id = existing.data[0]["id"]
+        sb.table("ideas").update({
+            "product_name": product_name,
+            "tagline": tagline,
+            "status": "complete",
+            "updated_at": "now()",
+        }).eq("id", idea_id).execute()
+
+    # Get next version number
+    versions = sb.table("idea_versions").select("version_number").eq("idea_id", idea_id).order("version_number", desc=True).limit(1).execute()
+    next_version = (versions.data[0]["version_number"] + 1) if versions.data else 1
+
+    # Insert version
+    sb.table("idea_versions").insert({
+        "idea_id": idea_id,
+        "version_number": next_version,
+        "conversation": conversation,
+        "outputs": outputs,
+    }).execute()
+
+    return jsonify({
+        "ideaId": idea_id,
+        "versionNumber": next_version,
+        "isNew": is_new,
+    })
+
+
+@app.route("/api/stripe/create-checkout", methods=["POST"])
+@require_auth
+def stripe_create_checkout():
+    if not STRIPE_SECRET_KEY:
+        return jsonify({"error": "Stripe not configured"}), 500
+
+    import stripe
+    stripe.api_key = STRIPE_SECRET_KEY
+
+    user = request.user
+    sb = get_supabase()
+    profile = sb.table("profiles").select("stripe_customer_id").eq("id", user.id).single().execute()
+
+    checkout_params = {
+        "mode": "subscription",
+        "line_items": [{"price": STRIPE_PRICE_ID, "quantity": 1}],
+        "success_url": request.host_url + "account?success=1",
+        "cancel_url": request.host_url + "account?canceled=1",
+        "metadata": {"user_id": user.id},
+    }
+
+    # Reuse existing Stripe customer if we have one
+    if profile.data and profile.data.get("stripe_customer_id"):
+        checkout_params["customer"] = profile.data["stripe_customer_id"]
+    else:
+        checkout_params["customer_email"] = user.email
+
+    session = stripe.checkout.Session.create(**checkout_params)
+    return jsonify({"url": session.url})
+
+
+@app.route("/api/stripe/portal", methods=["POST"])
+@require_auth
+def stripe_portal():
+    if not STRIPE_SECRET_KEY:
+        return jsonify({"error": "Stripe not configured"}), 500
+
+    import stripe
+    stripe.api_key = STRIPE_SECRET_KEY
+
+    user = request.user
+    sb = get_supabase()
+    profile = sb.table("profiles").select("stripe_customer_id").eq("id", user.id).single().execute()
+
+    if not profile.data or not profile.data.get("stripe_customer_id"):
+        return jsonify({"error": "No billing account found"}), 404
+
+    session = stripe.billing_portal.Session.create(
+        customer=profile.data["stripe_customer_id"],
+        return_url=request.host_url + "account",
+    )
+    return jsonify({"url": session.url})
+
+
+@app.route("/api/stripe/webhook", methods=["POST"])
+def stripe_webhook():
+    if not STRIPE_SECRET_KEY or not STRIPE_WEBHOOK_SECRET:
+        return jsonify({"error": "Stripe not configured"}), 500
+
+    import stripe
+    stripe.api_key = STRIPE_SECRET_KEY
+
+    payload = request.get_data()
+    sig_header = request.headers.get("Stripe-Signature")
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+    except (ValueError, stripe.SignatureVerificationError):
+        return jsonify({"error": "Invalid signature"}), 400
+
+    sb = get_supabase()
+
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        user_id = session.get("metadata", {}).get("user_id")
+        customer_id = session.get("customer")
+        subscription_id = session.get("subscription")
+
+        if user_id:
+            sb.table("profiles").update({
+                "tier": "pro",
+                "stripe_customer_id": customer_id,
+                "stripe_subscription_id": subscription_id,
+            }).eq("id", user_id).execute()
+
+    elif event["type"] == "customer.subscription.deleted":
+        subscription = event["data"]["object"]
+        customer_id = subscription.get("customer")
+
+        # Find the profile by stripe_customer_id and downgrade
+        sb.table("profiles").update({
+            "tier": "free",
+            "stripe_subscription_id": None,
+        }).eq("stripe_customer_id", customer_id).execute()
+
+    return jsonify({"received": True})
 
 
 if __name__ == "__main__":
