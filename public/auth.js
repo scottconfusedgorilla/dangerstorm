@@ -18,17 +18,29 @@ function initSupabase() {
         }
         sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        sbClient.auth.onAuthStateChange(async (event, session) => {
+        sbClient.auth.onAuthStateChange((event, session) => {
+            // IMPORTANT: Do NOT await inside this callback.
+            // Supabase SDK v2.98 uses navigator.locks internally;
+            // an async callback can deadlock signInWithPassword.
             if (session?.user) {
                 currentUser = session.user;
-                currentProfile = await fetchProfile();
+                // Fetch profile in background — don't block the callback
+                fetchProfile().then((profile) => {
+                    currentProfile = profile;
+                    updateAuthUI();
+                    if (typeof onAuthChange === "function") {
+                        onAuthChange(currentUser, currentProfile);
+                    }
+                });
+                // Update UI immediately with user info (before profile loads)
+                updateAuthUI();
             } else {
                 currentUser = null;
                 currentProfile = null;
-            }
-            updateAuthUI();
-            if (typeof onAuthChange === "function") {
-                onAuthChange(currentUser, currentProfile);
+                updateAuthUI();
+                if (typeof onAuthChange === "function") {
+                    onAuthChange(currentUser, currentProfile);
+                }
             }
         });
 
