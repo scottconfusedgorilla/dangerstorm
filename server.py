@@ -231,7 +231,7 @@ def chat():
 
     try:
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=16000,
             system=SYSTEM_PROMPT,
             messages=messages,
@@ -268,7 +268,7 @@ def chat_stream():
     def generate():
         try:
             with client.messages.stream(
-                model="claude-sonnet-4-20250514",
+                model="claude-sonnet-4-6",
                 max_tokens=16000,
                 system=SYSTEM_PROMPT,
                 messages=api_messages,
@@ -365,7 +365,7 @@ def generate_ppt():
 
     try:
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=4000,
             system=PPT_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": deck_prompt}],

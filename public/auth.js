@@ -31,6 +31,9 @@ function initSupabase() {
                 onAuthChange(currentUser, currentProfile);
             }
         });
+
+        // Show sign-in button immediately (don't wait for auth state event)
+        updateAuthUI();
     } catch (err) {
         console.error("Supabase init failed:", err);
         updateAuthUI();
