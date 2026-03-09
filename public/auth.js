@@ -5,7 +5,7 @@
 const SUPABASE_URL = "https://detfoqtvhrmbizzdzenb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRldGZvcXR2aHJtYml6emR6ZW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjc4MzksImV4cCI6MjA4ODY0MzgzOX0.Yfcr3PabrD2HtoH2B7Tzl6O9mONmAaG-Ww7rK9WZHRE";
 
-let supabase = null;
+let sbClient = null;
 let currentUser = null;
 let currentProfile = null;
 
@@ -16,9 +16,9 @@ function initSupabase() {
             updateAuthUI();
             return;
         }
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        supabase.auth.onAuthStateChange(async (event, session) => {
+        sbClient.auth.onAuthStateChange(async (event, session) => {
             if (session?.user) {
                 currentUser = session.user;
                 currentProfile = await fetchProfile();
@@ -42,7 +42,7 @@ function initSupabase() {
 
 async function fetchProfile() {
     if (!currentUser) return null;
-    const { data, error } = await supabase
+    const { data, error } = await sbClient
         .from("profiles")
         .select("*")
         .eq("id", currentUser.id)
@@ -63,16 +63,16 @@ function getProfile() {
 }
 
 function getSupabase() {
-    return supabase;
+    return sbClient;
 }
 
 async function getAccessToken() {
-    const { data } = await supabase.auth.getSession();
+    const { data } = await sbClient.auth.getSession();
     return data?.session?.access_token || null;
 }
 
 async function signInWithGoogle() {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error } = await sbClient.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: window.location.origin },
     });
@@ -80,7 +80,7 @@ async function signInWithGoogle() {
 }
 
 async function signInWithEmail(email) {
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await sbClient.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: window.location.origin },
     });
@@ -92,7 +92,7 @@ async function signInWithEmail(email) {
 }
 
 async function signOut() {
-    await supabase.auth.signOut();
+    await sbClient.auth.signOut();
     currentUser = null;
     currentProfile = null;
     updateAuthUI();
