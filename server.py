@@ -188,7 +188,10 @@ def chat_stream():
         return jsonify({"error": "No user message provided"}), 400
 
     def generate():
+        import time
+        token_count = 0
         try:
+            print(f"[stream] Starting chat stream, {len(api_messages)} messages", flush=True)
             with client.messages.stream(
                 model="claude-sonnet-4-6",
                 max_tokens=16000,
@@ -196,6 +199,7 @@ def chat_stream():
                 messages=api_messages,
             ) as stream:
                 for text in stream.text_stream:
+                    token_count += 1
                     yield f"data: {json.dumps({'text': text})}\n\n"
             # Send stop reason so frontend can detect truncation
             msg = stream.get_final_message()
@@ -204,10 +208,15 @@ def chat_stream():
             meta = {"done": True, "stop_reason": stop}
             if usage:
                 meta["output_tokens"] = usage.output_tokens
+            print(f"[stream] Completed: stop_reason={stop}, tokens={usage.output_tokens if usage else 'unknown'}", flush=True)
             yield f"data: {json.dumps(meta)}\n\n"
         except anthropic.APIError as e:
+            print(f"[stream] APIError after {token_count} chunks: {e}", flush=True)
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        except GeneratorExit:
+            print(f"[stream] GeneratorExit (client disconnected) after {token_count} chunks", flush=True)
         except Exception as e:
+            print(f"[stream] Exception after {token_count} chunks: {type(e).__name__}: {e}", flush=True)
             yield f"data: {json.dumps({'error': f'Stream error: {str(e)}'})}\n\n"
 
     return Response(
