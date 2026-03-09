@@ -2,9 +2,8 @@
 // DangerStorm — Supabase Auth
 // ============================================
 
-// TODO: Replace with your Supabase project values
-const SUPABASE_URL = "REPLACE_ME";
-const SUPABASE_ANON_KEY = "REPLACE_ME";
+const SUPABASE_URL = "https://detfoqtvhrmbizzdzenb.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_t8dgsFEQcFRNj5JwlMSmaw_xI6My33v";
 
 let supabase = null;
 let currentUser = null;
