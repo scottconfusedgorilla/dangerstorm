@@ -14,7 +14,7 @@
                 <div id="auth-bar"><button id="sign-in-btn" class="auth-link-btn" onclick="if(typeof showAuthModal==='function')showAuthModal()">Sign in</button></div>
             </div>
             <p class="tagline">One idea. One domain. One deck.</p>
-            <p class="build-number">build 019</p>
+            <p class="build-number">build 020</p>
         </header>
 
         <div id="chat-container">
@@ -74,22 +74,8 @@
             </div>
 
             <button id="generate-extras-btn" class="action-btn primary generate-extras-btn hidden" onclick="generateExtras()">
-                Generate Full Package (landing page, signup form, build prompt)
+                Generate Full Package (landing page copy, signup form, build prompt)
             </button>
-
-            <div class="output-block hidden" id="output-4">
-                <div class="output-header">
-                    <h3>LANDING PAGE PREVIEW</h3>
-                    <button class="copy-btn" data-target="output-4-content">Copy HTML</button>
-                </div>
-                <div class="mockup-frame">
-                    <iframe id="output-4-preview" sandbox="allow-same-origin" title="Landing page preview"></iframe>
-                </div>
-                <details class="code-toggle">
-                    <summary>View HTML source</summary>
-                    <pre id="output-4-content" class="output-content"></pre>
-                </details>
-            </div>
 
             <div class="output-block hidden" id="output-2">
                 <div class="output-header">
@@ -100,20 +86,6 @@
                 <div class="output-links">
                     <a class="link-btn carrd-btn" href="https://carrd.co/" target="_blank" rel="noopener">Go to Carrd</a>
                 </div>
-            </div>
-
-            <div class="output-block hidden" id="output-5">
-                <div class="output-header">
-                    <h3>SIGNUP FORM PREVIEW</h3>
-                    <button class="copy-btn" data-target="output-5-content">Copy HTML</button>
-                </div>
-                <div class="mockup-frame">
-                    <iframe id="output-5-preview" sandbox="allow-same-origin" title="Signup form preview"></iframe>
-                </div>
-                <details class="code-toggle">
-                    <summary>View HTML source</summary>
-                    <pre id="output-5-content" class="output-content"></pre>
-                </details>
             </div>
 
             <div class="output-block hidden" id="output-3">
@@ -133,9 +105,6 @@
                     <button class="copy-btn" data-target="output-6-content">Copy</button>
                 </div>
                 <pre id="output-6-content" class="output-content"></pre>
-                <div class="output-links">
-                    <button class="link-btn claude-btn" onclick="openBuildInClaude()">Open in Claude</button>
-                </div>
             </div>
         </div>
     </div>

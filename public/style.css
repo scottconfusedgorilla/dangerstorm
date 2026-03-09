@@ -824,11 +824,41 @@ header .tagline {
     border-color: var(--accent);
 }
 
+.idea-card.dragging {
+    opacity: 0.4;
+    border-color: var(--accent);
+}
+
+.idea-card.drag-over {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent);
+}
+
+.drag-handle {
+    cursor: grab;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    user-select: none;
+    padding-right: 8px;
+    line-height: 1;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
 .idea-card-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     margin-bottom: 4px;
+}
+
+.idea-card-header .idea-name {
+    flex: 1;
+}
+
+.idea-card-header .idea-status {
+    flex-shrink: 0;
 }
 
 .idea-name {

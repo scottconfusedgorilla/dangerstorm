@@ -25,10 +25,21 @@ async function getIdeas() {
     const { data, error } = await sb
         .from("ideas")
         .select("*, idea_versions(count)")
+        .order("sort_order", { ascending: true, nullsFirst: false })
         .order("updated_at", { ascending: false });
 
     if (error) throw new Error(error.message);
     return data;
+}
+
+async function updateIdeaOrder(ideaId, sortOrder) {
+    const sb = getSupabase();
+    const { error } = await sb
+        .from("ideas")
+        .update({ sort_order: sortOrder })
+        .eq("id", ideaId);
+
+    if (error) throw new Error(error.message);
 }
 
 async function getIdea(ideaId) {

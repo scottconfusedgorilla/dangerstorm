@@ -172,16 +172,27 @@ document.getElementById("download-all-btn").addEventListener("click", async () =
     const output1 = document.getElementById("output-1-content").textContent;
     const output2 = document.getElementById("output-2-content").textContent;
     const output3 = document.getElementById("output-3-content").textContent;
-    const output4 = document.getElementById("output-4-content").textContent;
-    const output5 = document.getElementById("output-5-content").textContent;
     const output6 = document.getElementById("output-6-content").textContent;
 
     if (output1) zip.file("01-pitch-deck-prompt.txt", output1);
     if (output2) zip.file("02-carrd-landing-page-copy.txt", output2);
     if (output3) zip.file("03-kit-signup-form-copy.txt", output3);
-    if (output4) zip.file("04-landing-page-mockup.html", output4);
-    if (output5) zip.file("05-signup-form-mockup.html", output5);
-    if (output6) zip.file("06-claude-code-build-prompt.md", output6);
+    if (output6) zip.file("04-claude-code-build-prompt.md", output6);
+
+    // Include conversation history
+    if (conversationHistory.length > 0) {
+        let transcript = "";
+        for (const msg of conversationHistory) {
+            const role = msg.role === "user" ? "YOU" : "DANGERSTORM";
+            const text = typeof msg.content === "string"
+                ? msg.content
+                : msg.content.filter((p) => p.type === "text").map((p) => p.text).join("\n");
+            // Skip output markers in transcript
+            const clean = text.replace(/===OUTPUT_\d_START===[\s\S]*?===OUTPUT_\d_END===/g, "").trim();
+            if (clean) transcript += `${role}:\n${clean}\n\n`;
+        }
+        zip.file("00-conversation.txt", transcript.trim());
+    }
 
     const blob = await zip.generateAsync({ type: "blob" });
     const url = URL.createObjectURL(blob);
@@ -244,12 +255,6 @@ function parseOutputs(text) {
     const output3Match = text.match(
         /===OUTPUT_3_START===([\s\S]*?)===OUTPUT_3_END===/
     );
-    const output4Match = text.match(
-        /===OUTPUT_4_START===([\s\S]*?)===OUTPUT_4_END===/
-    );
-    const output5Match = text.match(
-        /===OUTPUT_5_START===([\s\S]*?)===OUTPUT_5_END===/
-    );
     const output6Match = text.match(
         /===OUTPUT_6_START===([\s\S]*?)===OUTPUT_6_END===/
     );
@@ -260,8 +265,6 @@ function parseOutputs(text) {
             output1: output1Match[1].trim(),
             output2: output2Match ? output2Match[1].trim() : "",
             output3: output3Match ? output3Match[1].trim() : "",
-            output4: output4Match ? output4Match[1].trim() : "",
-            output5: output5Match ? output5Match[1].trim() : "",
             output6: output6Match ? output6Match[1].trim() : "",
             conversationText: text
                 .replace(/===OUTPUT_\d_START===[\s\S]*?===OUTPUT_\d_END===/g, "")
@@ -286,12 +289,6 @@ function openInCopilot() {
     });
 }
 
-function openBuildInClaude() {
-    const prompt = document.getElementById("output-6-content").textContent;
-    if (!prompt) return;
-    window.open("https://claude.ai/new?q=" + encodeURIComponent(prompt), "_blank");
-}
-
 function openDomainSearch() {
     const prompt = document.getElementById("output-1-content").textContent;
     // Extract domain from deck prompt text
@@ -301,51 +298,18 @@ function openDomainSearch() {
     window.open("https://www.godaddy.com/en-ca/domainsearch/find?domainToCheck=" + encodeURIComponent(domain), "_blank");
 }
 
-function renderMockup(iframeId, html) {
-    const iframe = document.getElementById(iframeId);
-    if (!iframe || !html) return;
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
-    doc.open();
-    doc.write(html);
-    doc.close();
-    // Auto-resize iframe to content height after load
-    iframe.onload = () => {
-        try {
-            const height = doc.documentElement.scrollHeight;
-            iframe.style.height = Math.min(Math.max(height, 300), 1200) + "px";
-        } catch (e) {
-            // fallback height already set in CSS
-        }
-    };
-    // Trigger resize for inline content
-    setTimeout(() => {
-        try {
-            const height = doc.documentElement.scrollHeight;
-            iframe.style.height = Math.min(Math.max(height, 300), 1200) + "px";
-        } catch (e) {}
-    }, 100);
-}
-
-function showOutputs(output1, output2, output3, output4, output5, output6) {
+function showOutputs(output1, output2, output3, output6) {
     document.getElementById("output-1-content").textContent = output1;
 
     // If we only have output 1, show the "Generate Full Package" button and hide extras
-    const hasExtras = output2 || output4 || output6;
-    const extrasBlocks = document.querySelectorAll("#output-2, #output-3, #output-4, #output-5, #output-6");
+    const hasExtras = output2 || output6;
+    const extrasBlocks = document.querySelectorAll("#output-2, #output-3, #output-6");
     const generateExtrasBtn = document.getElementById("generate-extras-btn");
 
     if (hasExtras) {
         document.getElementById("output-2-content").textContent = output2;
         document.getElementById("output-3-content").textContent = output3;
         document.getElementById("output-6-content").textContent = output6 || "";
-        if (output4) {
-            document.getElementById("output-4-content").textContent = output4;
-            renderMockup("output-4-preview", output4);
-        }
-        if (output5) {
-            document.getElementById("output-5-content").textContent = output5;
-            renderMockup("output-5-preview", output5);
-        }
         extrasBlocks.forEach((el) => el.classList.remove("hidden"));
         if (generateExtrasBtn) generateExtrasBtn.classList.add("hidden");
     } else {
@@ -397,13 +361,11 @@ async function generateExtras() {
 
         // Parse the extras outputs
         const parsed = parseOutputs("===OUTPUT_1_START===\nplaceholder\n===OUTPUT_1_END===\n" + fullText);
-        if (parsed.output2 || parsed.output4 || parsed.output6) {
+        if (parsed.output2 || parsed.output6) {
             showOutputs(
                 deckPrompt,
                 parsed.output2,
                 parsed.output3,
-                parsed.output4,
-                parsed.output5,
                 parsed.output6
             );
         } else {
@@ -472,7 +434,7 @@ async function sendMessage() {
         const response = await fetch("/api/chat/stream", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messages: conversationHistory }),
+            body: JSON.stringify({ messages: conversationHistory, userEmail: getUser()?.email || "" }),
         });
 
         removeTypingIndicator();
@@ -527,7 +489,7 @@ async function sendMessage() {
         if (parsed.hasOutputs) {
             // Update message to show only conversational text
             msgDiv.textContent = parsed.conversationText || "Here are your outputs:";
-            showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output4, parsed.output5, parsed.output6);
+            showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output6);
         }
     } catch (err) {
         removeTypingIndicator();
@@ -570,7 +532,7 @@ function restoreSession() {
         if (msg.role === "assistant" && parsed.hasOutputs) {
             const displayText = parsed.conversationText || "Here are your outputs:";
             addMessage("assistant", displayText);
-            showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output4, parsed.output5, parsed.output6);
+            showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output6);
         } else {
             addMessage(msg.role, text);
         }
@@ -599,8 +561,6 @@ document.getElementById("save-idea-btn").addEventListener("click", async () => {
         output1: document.getElementById("output-1-content").textContent,
         output2: document.getElementById("output-2-content").textContent,
         output3: document.getElementById("output-3-content").textContent,
-        output4: document.getElementById("output-4-content").textContent,
-        output5: document.getElementById("output-5-content").textContent,
         output6: document.getElementById("output-6-content").textContent,
     };
 

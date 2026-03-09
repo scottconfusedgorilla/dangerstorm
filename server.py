@@ -81,8 +81,9 @@ Your voice: You talk like a senior product manager who's evaluated a thousand id
 2. Primary user / who buys it (only if not clear from pitch)
 3. Revenue model (only if not obvious)
 4. The one key differentiator / insight (almost always ask — it's the heart of Slide 3)
-5. Competitor/reference URL (truly optional, only if not mentioned)
-6. Current status (often inferable or skippable)
+5. Contact email for the slides (confirm naturally — e.g., "What email should go on the deck? Or should I use [their email] if provided in context?"). If the user is signed in, their email will be in the system context — default to that and just confirm briefly.
+6. Competitor/reference URL (truly optional, only if not mentioned)
+7. Current status (often inferable or skippable)
 
 ## YOUR OPENER (first message, always):
 
@@ -107,14 +108,14 @@ Generate ONLY the pitch deck prompt (Output 1). The other outputs will be genera
 
 Generate a detailed prompt that will produce an 8-slide pitch deck when pasted into Claude or ChatGPT:
 
-Slide 1 — TITLE: Product name (large), domain, one-line tagline, "Scott Welch | atomicmaple.vc | [today's date]"
+Slide 1 — TITLE: Product name (large), domain, one-line tagline, "[user's name or email] | [today's date]"
 Slide 2 — THE PROBLEM: What pain, who feels it, why unsolved
 Slide 3 — THE SOLUTION: What it does in plain language, THE KEY INSIGHT that makes it different
 Slide 4 — HOW IT WORKS: 3-4 steps of user experience, each with icon concept + short title + one-line description
 Slide 5 — WHO BUYS IT: Primary audience, secondary audiences, why they'd pay
 Slide 6 — REVENUE MODEL: How it makes money, pricing tiers if applicable, unit economics at scale
 Slide 7 — STATUS & PROOF: Current status, any validation, what's needed next
-Slide 8 — CLOSING: Product name + domain, one-line pitch repeated, contact info
+Slide 8 — CLOSING: Product name + domain, one-line pitch repeated, contact email
 
 The prompt should also specify:
 - A bold color palette appropriate to the product category (not generic blue)
@@ -170,9 +171,15 @@ def chat():
 def chat_stream():
     data = request.json
     messages = data.get("messages", [])
+    user_email = data.get("userEmail", "")
 
     if not messages:
         return jsonify({"error": "No messages provided"}), 400
+
+    # Build system prompt, injecting user email context if available
+    system = SYSTEM_PROMPT
+    if user_email:
+        system += f"\n\n## USER CONTEXT:\nThe user's email is {user_email}. Use this as the default contact email for the deck slides unless they specify otherwise."
 
     # Ensure messages alternate correctly for the API.
     # The frontend sends the hardcoded opener as an assistant message first,
@@ -195,7 +202,7 @@ def chat_stream():
             with client.messages.stream(
                 model="claude-sonnet-4-6",
                 max_tokens=16000,
-                system=SYSTEM_PROMPT,
+                system=system,
                 messages=api_messages,
             ) as stream:
                 for text in stream.text_stream:
@@ -230,7 +237,7 @@ def chat_stream():
     )
 
 
-EXTRAS_SYSTEM_PROMPT = """You are DangerStorm's output generator. Given a pitch deck prompt that was already generated, produce the five additional outputs for the product. Use these exact markers:
+EXTRAS_SYSTEM_PROMPT = """You are DangerStorm's output generator. Given a pitch deck prompt that was already generated, produce three additional outputs for the product. Use these exact markers:
 
 ===OUTPUT_2_START===
 [Carrd landing page copy — plain text, under 150 words]
@@ -240,14 +247,6 @@ EXTRAS_SYSTEM_PROMPT = """You are DangerStorm's output generator. Given a pitch 
 [Kit signup form copy — plain text]
 ===OUTPUT_3_END===
 
-===OUTPUT_4_START===
-[Complete self-contained HTML page for a Carrd-style landing page mockup. All CSS in a <style> tag. Bold product-appropriate color palette. Clean, modern, mobile-responsive. Under 80 lines.]
-===OUTPUT_4_END===
-
-===OUTPUT_5_START===
-[Complete self-contained HTML page for a Kit email signup form mockup. Match OUTPUT 4 palette. Under 60 lines.]
-===OUTPUT_5_END===
-
 ===OUTPUT_6_START===
 [Claude Code build prompt — direct instructions for building an MVP. Specify tech stack, core features, user flow, UI direction. Under 30 lines. End with "Build this as a working MVP."]
 ===OUTPUT_6_END===
@@ -255,10 +254,6 @@ EXTRAS_SYSTEM_PROMPT = """You are DangerStorm's output generator. Given a pitch 
 OUTPUT 2 — CARRD COPY: Headline (8 words max), subheadline, 3 benefit-focused bullets with **bold** lead word, social proof placeholder, CTA, footer. Carrd-compatible: **bold**, *italic*, [links](URL) only.
 
 OUTPUT 3 — KIT FORM COPY: Form headline, description, email placeholder, button text, privacy line.
-
-OUTPUT 4 — LANDING PAGE HTML: Real, polished one-page site. Product-appropriate colors (NOT orange). Headline, features as cards, CTA button with hover, footer. Mobile-responsive.
-
-OUTPUT 5 — SIGNUP FORM HTML: Centered card, form with styled email input, submit button, privacy line. Match OUTPUT 4 colors.
 
 OUTPUT 6 — BUILD PROMPT: Project description, tech stack, 3-5 MVP features, user flow, UI direction, data model if needed. Practical and buildable.
 
@@ -279,7 +274,7 @@ def generate_extras():
                 model="claude-sonnet-4-6",
                 max_tokens=16000,
                 system=EXTRAS_SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": f"Generate all five additional outputs for this product based on the following deck prompt:\n\n{deck_prompt}"}],
+                messages=[{"role": "user", "content": f"Generate all three additional outputs for this product based on the following deck prompt:\n\n{deck_prompt}"}],
             ) as stream:
                 for text in stream.text_stream:
                     yield f"data: {json.dumps({'text': text})}\n\n"

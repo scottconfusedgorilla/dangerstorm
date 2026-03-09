@@ -41,8 +41,9 @@ async function loadDashboard() {
             const domain = idea.domain === "None" ? "No domain" : idea.domain;
 
             return `
-                <div class="idea-card" data-id="${idea.id}">
+                <div class="idea-card" data-id="${idea.id}" draggable="true">
                     <div class="idea-card-header">
+                        <span class="drag-handle" title="Drag to reorder">⠿</span>
                         <h3 class="idea-name">${escapeHtml(idea.product_name || "Untitled")}</h3>
                         <span class="idea-status ${idea.status}">${idea.status}</span>
                     </div>
@@ -58,6 +59,8 @@ async function loadDashboard() {
                 </div>
             `;
         }).join("");
+
+        initDragAndDrop(gridEl);
     } catch (err) {
         loadingEl.textContent = "Failed to load ideas: " + err.message;
     }
@@ -84,6 +87,70 @@ function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Drag and drop sorting
+let draggedCard = null;
+
+function initDragAndDrop(grid) {
+    const cards = grid.querySelectorAll(".idea-card");
+
+    cards.forEach((card) => {
+        card.addEventListener("dragstart", (e) => {
+            draggedCard = card;
+            card.classList.add("dragging");
+            e.dataTransfer.effectAllowed = "move";
+        });
+
+        card.addEventListener("dragend", () => {
+            card.classList.remove("dragging");
+            draggedCard = null;
+            // Remove all drop indicators
+            grid.querySelectorAll(".idea-card").forEach((c) => c.classList.remove("drag-over"));
+            // Persist new order
+            saveOrder(grid);
+        });
+
+        card.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+            if (card !== draggedCard) {
+                card.classList.add("drag-over");
+            }
+        });
+
+        card.addEventListener("dragleave", () => {
+            card.classList.remove("drag-over");
+        });
+
+        card.addEventListener("drop", (e) => {
+            e.preventDefault();
+            card.classList.remove("drag-over");
+            if (card === draggedCard) return;
+
+            // Determine position: insert before or after based on mouse position
+            const rect = card.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            if (e.clientY < midY) {
+                grid.insertBefore(draggedCard, card);
+            } else {
+                grid.insertBefore(draggedCard, card.nextSibling);
+            }
+        });
+    });
+}
+
+async function saveOrder(grid) {
+    const cards = grid.querySelectorAll(".idea-card");
+    const updates = [];
+    cards.forEach((card, i) => {
+        updates.push(updateIdeaOrder(card.dataset.id, i));
+    });
+    try {
+        await Promise.all(updates);
+    } catch (err) {
+        console.warn("Failed to save order:", err.message);
+    }
 }
 
 // Boot
