@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DangerStorm — One idea. One domain. One deck.</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>DANGER<span class="accent">STORM</span></h1>
+            <p class="tagline">One idea. One domain. One deck.</p>
+        </header>
+
+        <div id="chat-container">
+            <div id="messages"></div>
+
+            <div id="file-preview" class="hidden">
+                <span id="file-preview-name"></span>
+                <button id="file-remove-btn" title="Remove file">&times;</button>
+            </div>
+
+            <div id="input-area">
+                <input type="file" id="file-input" accept="image/*,.txt,.md,.csv,.json,.pdf" hidden>
+                <button id="attach-btn" title="Attach file">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"></path>
+                    </svg>
+                </button>
+                <textarea
+                    id="user-input"
+                    placeholder="Type your answer..."
+                    rows="1"
+                    autofocus
+                ></textarea>
+                <button id="send-btn" title="Send">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="outputs-container" class="hidden">
+            <div class="output-actions">
+                <button id="download-all-btn" class="action-btn primary">Download All</button>
+                <button id="refine-btn" class="action-btn">Refine</button>
+                <button id="start-over-btn" class="action-btn">Start Over</button>
+            </div>
+
+            <div class="output-block" id="output-1">
+                <div class="output-header">
+                    <h3>PITCH DECK PROMPT</h3>
+                    <button class="copy-btn" data-target="output-1-content">Copy</button>
+                </div>
+                <pre id="output-1-content" class="output-content"></pre>
+            </div>
+
+            <div class="output-block" id="output-4">
+                <div class="output-header">
+                    <h3>LANDING PAGE PREVIEW</h3>
+                    <button class="copy-btn" data-target="output-4-content">Copy HTML</button>
+                </div>
+                <div class="mockup-frame">
+                    <iframe id="output-4-preview" sandbox="allow-same-origin" title="Landing page preview"></iframe>
+                </div>
+                <details class="code-toggle">
+                    <summary>View HTML source</summary>
+                    <pre id="output-4-content" class="output-content"></pre>
+                </details>
+            </div>
+
+            <div class="output-block" id="output-2">
+                <div class="output-header">
+                    <h3>CARRD LANDING PAGE COPY</h3>
+                    <button class="copy-btn" data-target="output-2-content">Copy</button>
+                </div>
+                <pre id="output-2-content" class="output-content"></pre>
+            </div>
+
+            <div class="output-block" id="output-5">
+                <div class="output-header">
+                    <h3>SIGNUP FORM PREVIEW</h3>
+                    <button class="copy-btn" data-target="output-5-content">Copy HTML</button>
+                </div>
+                <div class="mockup-frame">
+                    <iframe id="output-5-preview" sandbox="allow-same-origin" title="Signup form preview"></iframe>
+                </div>
+                <details class="code-toggle">
+                    <summary>View HTML source</summary>
+                    <pre id="output-5-content" class="output-content"></pre>
+                </details>
+            </div>
+
+            <div class="output-block" id="output-3">
+                <div class="output-header">
+                    <h3>KIT SIGNUP FORM COPY</h3>
+                    <button class="copy-btn" data-target="output-3-content">Copy</button>
+                </div>
+                <pre id="output-3-content" class="output-content"></pre>
+            </div>
+
+            <div class="output-block" id="output-6">
+                <div class="output-header">
+                    <h3>CLAUDE CODE BUILD PROMPT</h3>
+                    <button class="copy-btn" data-target="output-6-content">Copy</button>
+                </div>
+                <pre id="output-6-content" class="output-content"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
