@@ -272,6 +272,13 @@ function parseOutputs(text) {
     return { hasOutputs: false };
 }
 
+function openInClaude() {
+    const prompt = document.getElementById("output-1-content").textContent;
+    if (!prompt) return;
+    const url = "https://claude.ai/new?q=" + encodeURIComponent(prompt);
+    window.open(url, "_blank");
+}
+
 function renderMockup(iframeId, html) {
     const iframe = document.getElementById(iframeId);
     if (!iframe || !html) return;

@@ -678,6 +678,11 @@ header .tagline {
     color: #fff;
 }
 
+.copy-btn.claude-btn {
+    background: #D97706;
+    color: #fff;
+}
+
 .output-content {
     padding: 16px;
     font-size: 0.85rem;
