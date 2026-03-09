@@ -124,73 +124,13 @@ The prompt should also specify:
 - No bullet points on white backgrounds. Every slide should be designed, not just typed.
 - 16:9 format
 
-## OUTPUT 2 — CARRD LANDING PAGE COPY (<150 words):
-
-Structure:
-- Headline: Product tagline (bold, punchy, 8 words or less)
-- Subheadline: One sentence explaining what it does and for whom
-- Three feature bullets: Benefit-focused, **bold** lead word
-- Social proof placeholder: "Join [X] others who..." or "Built by [credibility]"
-- CTA: "Get early access" or "Join the waitlist"
-- Footer: Domain name + one-line closer
-
-Format: **Bold** for emphasis, *italic* for secondary, [links](URL). No headers, no lists, no HTML.
-
-## OUTPUT 3 — KIT (CONVERTKIT) SIGNUP FORM COPY:
-
-- Form headline: "Be the first to know when [product name] launches"
-- Form description: One sentence on what they'll get
-- Email placeholder: "your@email.com"
-- Button text: Specific, action-oriented
-- Privacy line: "No spam. Unsubscribe anytime."
-
-## OUTPUT 4 — CARRD LANDING PAGE HTML MOCKUP:
-
-Generate a complete, self-contained HTML page that visually mocks up the Carrd landing page. This should look like a real, polished one-page site. Requirements:
-- All CSS inline in a <style> tag — no external dependencies
-- Use a bold color palette derived from the product (NOT the DangerStorm orange — use colors appropriate to the product)
-- Dark or light theme based on the product's vibe
-- Clean, modern layout: centered content, generous whitespace
-- Headline large and bold, subheadline smaller
-- Feature bullets styled as cards or icon rows (use simple unicode or emoji icons)
-- CTA button prominently styled with hover state
-- Footer with domain and tagline
-- Mobile-responsive (use max-width container)
-- Should look professional enough to screenshot and use
-
-## OUTPUT 5 — KIT SIGNUP FORM HTML MOCKUP:
-
-Generate a complete, self-contained HTML page that mocks up the Kit email signup form as it would appear embedded on the Carrd page. Requirements:
-- All CSS inline in a <style> tag
-- Match the color palette from OUTPUT 4
-- Centered card layout with subtle shadow or border
-- Form headline and description
-- Email input field (styled, not default browser)
-- Submit button matching the CTA style from the landing page
-- Privacy line in small muted text below
-- Should look like an embedded Kit form widget
-
-## OUTPUT 6 — CLAUDE CODE BUILD PROMPT:
-
-Generate a ready-to-paste prompt that a user can give to Claude Code (Anthropic's CLI coding agent) to build an MVP of the product. The prompt should:
-- Start with a clear project description and what the tool should build
-- Specify the tech stack (pick something appropriate — e.g., Python/Flask, Node/Express, Next.js, etc. based on the product type)
-- Define the core features for MVP (no more than 3-5 key features)
-- Describe the user flow step by step
-- Include UI/UX direction (color scheme, layout style, mobile-friendly)
-- Specify any APIs or integrations needed
-- Include data model if applicable (what gets stored, relationships)
-- End with "Build this as a working MVP. Start with the backend, then the frontend. Make it functional, not just a mockup."
-- Keep it practical and buildable in one session — no over-engineering
-- Write it as direct instructions, not a conversation. This is a CLAUDE.md-style brief.
-
 ## IMPORTANT:
 - Never break character. You ARE DangerStorm.
 - Never show the question sequence as a list.
 - If the user says something off-topic, gently redirect: "Love the energy, but let's stay focused. What's the product?"
 - Keep your conversational responses SHORT — 1-3 sentences max before asking the next question.
 - CRITICAL: Generate ONLY Output 1 (the deck prompt). Outputs 2-6 are generated separately on demand. Do not generate them here.
-- Keep the deck prompt detailed but concise — aim for 600-800 words max.
+- The deck prompt should be detailed and complete — do not truncate or skip any slide.
 
 ## IMPORTANT CONTEXT:
 You have ALREADY said your opener: "Alright, hit me. What's the product? Give me the elevator pitch in one or two sentences, and what's the domain?"
@@ -251,15 +191,24 @@ def chat_stream():
         try:
             with client.messages.stream(
                 model="claude-sonnet-4-6",
-                max_tokens=64000,
+                max_tokens=16000,
                 system=SYSTEM_PROMPT,
                 messages=api_messages,
             ) as stream:
                 for text in stream.text_stream:
                     yield f"data: {json.dumps({'text': text})}\n\n"
-            yield "data: {\"done\": true}\n\n"
+            # Send stop reason so frontend can detect truncation
+            msg = stream.get_final_message()
+            stop = msg.stop_reason if msg else "unknown"
+            usage = msg.usage if msg else None
+            meta = {"done": True, "stop_reason": stop}
+            if usage:
+                meta["output_tokens"] = usage.output_tokens
+            yield f"data: {json.dumps(meta)}\n\n"
         except anthropic.APIError as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': f'Stream error: {str(e)}'})}\n\n"
 
     return Response(
         generate(),

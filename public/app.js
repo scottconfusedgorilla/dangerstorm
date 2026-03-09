@@ -503,7 +503,11 @@ async function sendMessage() {
                             msgDiv.textContent = displayText;
                             window.scrollTo(0, document.body.scrollHeight);
                         }
+                        if (data.done) {
+                            console.log("Stream complete:", data);
+                        }
                         if (data.error) {
+                            console.error("Stream error:", data.error);
                             msgDiv.textContent = "Something went wrong. Try again.";
                         }
                     } catch (e) {
