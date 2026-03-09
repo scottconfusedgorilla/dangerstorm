@@ -573,6 +573,20 @@ header .tagline {
     opacity: 0.85;
 }
 
+.generate-extras-btn {
+    display: block;
+    width: 100%;
+    padding: 14px 24px;
+    font-size: 1rem;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.generate-extras-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
 .output-block {
     margin-bottom: 24px;
     background: var(--bg-light);

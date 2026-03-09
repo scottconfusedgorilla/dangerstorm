@@ -97,31 +97,11 @@ Your voice: You talk like a senior product manager who's evaluated a thousand id
 
 ## WHEN YOU HAVE ENOUGH INFO (usually after 3-5 exchanges):
 
-Generate ALL SIX outputs in a single response. Use these exact markers so the frontend can parse them:
+Generate ONLY the pitch deck prompt (Output 1). The other outputs will be generated separately if the user requests them. Use these exact markers so the frontend can parse them:
 
 ===OUTPUT_1_START===
 [The complete deck prompt — see structure below]
 ===OUTPUT_1_END===
-
-===OUTPUT_2_START===
-[Carrd landing page copy — plain text]
-===OUTPUT_2_END===
-
-===OUTPUT_3_START===
-[Kit signup form copy — plain text]
-===OUTPUT_3_END===
-
-===OUTPUT_4_START===
-[Complete HTML page for Carrd landing page mockup]
-===OUTPUT_4_END===
-
-===OUTPUT_5_START===
-[Complete HTML page for Kit signup form mockup]
-===OUTPUT_5_END===
-
-===OUTPUT_6_START===
-[Claude Code build prompt]
-===OUTPUT_6_END===
 
 ## OUTPUT 1 — DECK PROMPT STRUCTURE:
 
@@ -209,7 +189,8 @@ Generate a ready-to-paste prompt that a user can give to Claude Code (Anthropic'
 - Never show the question sequence as a list.
 - If the user says something off-topic, gently redirect: "Love the energy, but let's stay focused. What's the product?"
 - Keep your conversational responses SHORT — 1-3 sentences max before asking the next question.
-- CRITICAL: When generating outputs, you MUST generate ALL SIX outputs in a single response. Do not stop after output 3 — outputs 4, 5, and 6 are required. Keep HTML mockups concise but complete (under 100 lines each). The build prompt can be brief (under 30 lines). Do not truncate or skip any output.
+- CRITICAL: Generate ONLY Output 1 (the deck prompt). Outputs 2-6 are generated separately on demand. Do not generate them here.
+- Keep the deck prompt detailed but concise — aim for 600-800 words max.
 
 ## IMPORTANT CONTEXT:
 You have ALREADY said your opener: "Alright, hit me. What's the product? Give me the elevator pitch in one or two sentences, and what's the domain?"
@@ -233,7 +214,7 @@ def chat():
     try:
         response = client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=32000,
+            max_tokens=64000,
             system=SYSTEM_PROMPT,
             messages=messages,
         )
@@ -270,7 +251,7 @@ def chat_stream():
         try:
             with client.messages.stream(
                 model="claude-sonnet-4-6",
-                max_tokens=32000,
+                max_tokens=64000,
                 system=SYSTEM_PROMPT,
                 messages=api_messages,
             ) as stream:
@@ -280,7 +261,83 @@ def chat_stream():
         except anthropic.APIError as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
-    return Response(generate(), mimetype="text/event-stream")
+    return Response(
+        generate(),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # Disable nginx/proxy buffering
+            "Connection": "keep-alive",
+        },
+    )
+
+
+EXTRAS_SYSTEM_PROMPT = """You are DangerStorm's output generator. Given a pitch deck prompt that was already generated, produce the five additional outputs for the product. Use these exact markers:
+
+===OUTPUT_2_START===
+[Carrd landing page copy — plain text, under 150 words]
+===OUTPUT_2_END===
+
+===OUTPUT_3_START===
+[Kit signup form copy — plain text]
+===OUTPUT_3_END===
+
+===OUTPUT_4_START===
+[Complete self-contained HTML page for a Carrd-style landing page mockup. All CSS in a <style> tag. Bold product-appropriate color palette. Clean, modern, mobile-responsive. Under 80 lines.]
+===OUTPUT_4_END===
+
+===OUTPUT_5_START===
+[Complete self-contained HTML page for a Kit email signup form mockup. Match OUTPUT 4 palette. Under 60 lines.]
+===OUTPUT_5_END===
+
+===OUTPUT_6_START===
+[Claude Code build prompt — direct instructions for building an MVP. Specify tech stack, core features, user flow, UI direction. Under 30 lines. End with "Build this as a working MVP."]
+===OUTPUT_6_END===
+
+OUTPUT 2 — CARRD COPY: Headline (8 words max), subheadline, 3 benefit-focused bullets with **bold** lead word, social proof placeholder, CTA, footer. Carrd-compatible: **bold**, *italic*, [links](URL) only.
+
+OUTPUT 3 — KIT FORM COPY: Form headline, description, email placeholder, button text, privacy line.
+
+OUTPUT 4 — LANDING PAGE HTML: Real, polished one-page site. Product-appropriate colors (NOT orange). Headline, features as cards, CTA button with hover, footer. Mobile-responsive.
+
+OUTPUT 5 — SIGNUP FORM HTML: Centered card, form with styled email input, submit button, privacy line. Match OUTPUT 4 colors.
+
+OUTPUT 6 — BUILD PROMPT: Project description, tech stack, 3-5 MVP features, user flow, UI direction, data model if needed. Practical and buildable.
+
+Be concise. Every line earns its place."""
+
+
+@app.route("/api/generate-extras", methods=["POST"])
+def generate_extras():
+    data = request.json
+    deck_prompt = data.get("deckPrompt", "")
+
+    if not deck_prompt:
+        return jsonify({"error": "No deck prompt provided"}), 400
+
+    def generate():
+        try:
+            with client.messages.stream(
+                model="claude-sonnet-4-6",
+                max_tokens=16000,
+                system=EXTRAS_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": f"Generate all five additional outputs for this product based on the following deck prompt:\n\n{deck_prompt}"}],
+            ) as stream:
+                for text in stream.text_stream:
+                    yield f"data: {json.dumps({'text': text})}\n\n"
+            yield "data: {\"done\": true}\n\n"
+        except anthropic.APIError as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return Response(
+        generate(),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 PPT_SYSTEM_PROMPT = """You are a slide deck data generator. Given a pitch deck prompt, extract and generate structured JSON data for an 8-slide pitch deck.

@@ -299,21 +299,97 @@ function renderMockup(iframeId, html) {
 
 function showOutputs(output1, output2, output3, output4, output5, output6) {
     document.getElementById("output-1-content").textContent = output1;
-    document.getElementById("output-2-content").textContent = output2;
-    document.getElementById("output-3-content").textContent = output3;
-    document.getElementById("output-6-content").textContent = output6 || "";
 
-    if (output4) {
-        document.getElementById("output-4-content").textContent = output4;
-        renderMockup("output-4-preview", output4);
-    }
-    if (output5) {
-        document.getElementById("output-5-content").textContent = output5;
-        renderMockup("output-5-preview", output5);
+    // If we only have output 1, show the "Generate Full Package" button and hide extras
+    const hasExtras = output2 || output4 || output6;
+    const extrasBlocks = document.querySelectorAll("#output-2, #output-3, #output-4, #output-5, #output-6");
+    const generateExtrasBtn = document.getElementById("generate-extras-btn");
+
+    if (hasExtras) {
+        document.getElementById("output-2-content").textContent = output2;
+        document.getElementById("output-3-content").textContent = output3;
+        document.getElementById("output-6-content").textContent = output6 || "";
+        if (output4) {
+            document.getElementById("output-4-content").textContent = output4;
+            renderMockup("output-4-preview", output4);
+        }
+        if (output5) {
+            document.getElementById("output-5-content").textContent = output5;
+            renderMockup("output-5-preview", output5);
+        }
+        extrasBlocks.forEach((el) => el.classList.remove("hidden"));
+        if (generateExtrasBtn) generateExtrasBtn.classList.add("hidden");
+    } else {
+        extrasBlocks.forEach((el) => el.classList.add("hidden"));
+        if (generateExtrasBtn) generateExtrasBtn.classList.remove("hidden");
     }
 
     outputsContainer.classList.remove("hidden");
     outputsContainer.scrollIntoView({ behavior: "smooth" });
+}
+
+async function generateExtras() {
+    const deckPrompt = document.getElementById("output-1-content").textContent;
+    if (!deckPrompt) return;
+
+    const btn = document.getElementById("generate-extras-btn");
+    btn.disabled = true;
+    btn.textContent = "Generating...";
+
+    try {
+        const response = await fetch("/api/generate-extras", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ deckPrompt }),
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let fullText = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop();
+
+            for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                    try {
+                        const data = JSON.parse(line.slice(6));
+                        if (data.text) fullText += data.text;
+                    } catch (e) {}
+                }
+            }
+        }
+
+        // Parse the extras outputs
+        const parsed = parseOutputs("===OUTPUT_1_START===\nplaceholder\n===OUTPUT_1_END===\n" + fullText);
+        if (parsed.output2 || parsed.output4 || parsed.output6) {
+            showOutputs(
+                deckPrompt,
+                parsed.output2,
+                parsed.output3,
+                parsed.output4,
+                parsed.output5,
+                parsed.output6
+            );
+        } else {
+            btn.textContent = "Generation failed — try again";
+            btn.disabled = false;
+            return;
+        }
+    } catch (err) {
+        btn.textContent = "Connection error — try again";
+        btn.disabled = false;
+        return;
+    }
+
+    btn.textContent = "Generate Full Package";
+    btn.disabled = false;
 }
 
 async function sendMessage() {

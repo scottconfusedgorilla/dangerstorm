@@ -14,7 +14,7 @@
                 <div id="auth-bar"><button id="sign-in-btn" class="auth-link-btn" onclick="if(typeof showAuthModal==='function')showAuthModal()">Sign in</button></div>
             </div>
             <p class="tagline">One idea. One domain. One deck.</p>
-            <p class="build-number">build 013</p>
+            <p class="build-number">build 014</p>
         </header>
 
         <div id="chat-container">
@@ -68,7 +68,11 @@
                 <pre id="output-1-content" class="output-content"></pre>
             </div>
 
-            <div class="output-block" id="output-4">
+            <button id="generate-extras-btn" class="action-btn primary generate-extras-btn hidden" onclick="generateExtras()">
+                Generate Full Package (landing page, signup form, build prompt)
+            </button>
+
+            <div class="output-block hidden" id="output-4">
                 <div class="output-header">
                     <h3>LANDING PAGE PREVIEW</h3>
                     <button class="copy-btn" data-target="output-4-content">Copy HTML</button>
@@ -82,7 +86,7 @@
                 </details>
             </div>
 
-            <div class="output-block" id="output-2">
+            <div class="output-block hidden" id="output-2">
                 <div class="output-header">
                     <h3>CARRD LANDING PAGE COPY</h3>
                     <button class="copy-btn" data-target="output-2-content">Copy</button>
@@ -90,7 +94,7 @@
                 <pre id="output-2-content" class="output-content"></pre>
             </div>
 
-            <div class="output-block" id="output-5">
+            <div class="output-block hidden" id="output-5">
                 <div class="output-header">
                     <h3>SIGNUP FORM PREVIEW</h3>
                     <button class="copy-btn" data-target="output-5-content">Copy HTML</button>
@@ -104,7 +108,7 @@
                 </details>
             </div>
 
-            <div class="output-block" id="output-3">
+            <div class="output-block hidden" id="output-3">
                 <div class="output-header">
                     <h3>KIT SIGNUP FORM COPY</h3>
                     <button class="copy-btn" data-target="output-3-content">Copy</button>
@@ -112,7 +116,7 @@
                 <pre id="output-3-content" class="output-content"></pre>
             </div>
 
-            <div class="output-block" id="output-6">
+            <div class="output-block hidden" id="output-6">
                 <div class="output-header">
                     <h3>CLAUDE CODE BUILD PROMPT</h3>
                     <button class="copy-btn" data-target="output-6-content">Copy</button>
