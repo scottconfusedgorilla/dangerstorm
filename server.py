@@ -416,68 +416,72 @@ def account():
 @app.route("/api/save-idea", methods=["POST"])
 @require_auth
 def save_idea():
-    data = request.json
-    user_id = request.user.id
-    domain = data.get("domain", "None") or "None"
-    product_name = data.get("productName", "Untitled Idea")
-    tagline = data.get("tagline", "")
-    conversation = data.get("conversation", [])
-    outputs = data.get("outputs", {})
+    try:
+        data = request.json
+        user_id = request.user.id
+        domain = data.get("domain", "None") or "None"
+        product_name = data.get("productName", "Untitled Idea")
+        tagline = data.get("tagline", "")
+        conversation = data.get("conversation", [])
+        outputs = data.get("outputs", {})
 
-    sb = get_supabase()
+        sb = get_supabase()
 
-    # Check idea limit
-    profile = sb.table("profiles").select("tier, idea_count").eq("id", user_id).single().execute()
-    if not profile.data:
-        return jsonify({"error": "Profile not found"}), 404
+        # Check idea limit
+        profile = sb.table("profiles").select("tier, idea_count").eq("id", user_id).single().execute()
+        if not profile.data:
+            return jsonify({"error": "Profile not found"}), 404
 
-    tier = profile.data["tier"]
-    idea_count = profile.data["idea_count"]
-    max_ideas = 999 if tier == "pro" else 5
+        tier = profile.data["tier"]
+        idea_count = profile.data["idea_count"]
+        max_ideas = 999 if tier == "pro" else 5
 
-    # Check if this domain already has an idea (update, not count against limit)
-    existing = sb.table("ideas").select("id").eq("user_id", user_id).eq("domain", domain).execute()
-    is_new = len(existing.data) == 0
+        # Check if this domain already has an idea (update, not count against limit)
+        existing = sb.table("ideas").select("id").eq("user_id", user_id).eq("domain", domain).execute()
+        is_new = len(existing.data) == 0
 
-    if is_new and idea_count >= max_ideas:
-        return jsonify({"error": f"Idea limit reached ({max_ideas}). Upgrade to Pro for more."}), 403
+        if is_new and idea_count >= max_ideas:
+            return jsonify({"error": f"Idea limit reached ({max_ideas}). Upgrade to Pro for more."}), 403
 
-    # Upsert idea
-    if is_new:
-        idea_result = sb.table("ideas").insert({
-            "user_id": user_id,
-            "domain": domain,
-            "product_name": product_name,
-            "tagline": tagline,
-            "status": "complete",
+        # Upsert idea
+        if is_new:
+            idea_result = sb.table("ideas").insert({
+                "user_id": user_id,
+                "domain": domain,
+                "product_name": product_name,
+                "tagline": tagline,
+                "status": "complete",
+            }).execute()
+            idea_id = idea_result.data[0]["id"]
+        else:
+            idea_id = existing.data[0]["id"]
+            sb.table("ideas").update({
+                "product_name": product_name,
+                "tagline": tagline,
+                "status": "complete",
+                "updated_at": "now()",
+            }).eq("id", idea_id).execute()
+
+        # Get next version number
+        versions = sb.table("idea_versions").select("version_number").eq("idea_id", idea_id).order("version_number", desc=True).limit(1).execute()
+        next_version = (versions.data[0]["version_number"] + 1) if versions.data else 1
+
+        # Insert version
+        sb.table("idea_versions").insert({
+            "idea_id": idea_id,
+            "version_number": next_version,
+            "conversation": conversation,
+            "outputs": outputs,
         }).execute()
-        idea_id = idea_result.data[0]["id"]
-    else:
-        idea_id = existing.data[0]["id"]
-        sb.table("ideas").update({
-            "product_name": product_name,
-            "tagline": tagline,
-            "status": "complete",
-            "updated_at": "now()",
-        }).eq("id", idea_id).execute()
 
-    # Get next version number
-    versions = sb.table("idea_versions").select("version_number").eq("idea_id", idea_id).order("version_number", desc=True).limit(1).execute()
-    next_version = (versions.data[0]["version_number"] + 1) if versions.data else 1
-
-    # Insert version
-    sb.table("idea_versions").insert({
-        "idea_id": idea_id,
-        "version_number": next_version,
-        "conversation": conversation,
-        "outputs": outputs,
-    }).execute()
-
-    return jsonify({
-        "ideaId": idea_id,
-        "versionNumber": next_version,
-        "isNew": is_new,
-    })
+        return jsonify({
+            "ideaId": idea_id,
+            "versionNumber": next_version,
+            "isNew": is_new,
+        })
+    except Exception as e:
+        print(f"[save-idea] Error: {type(e).__name__}: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/stripe/create-checkout", methods=["POST"])
