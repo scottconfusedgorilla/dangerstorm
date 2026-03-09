@@ -10,21 +10,31 @@ let currentUser = null;
 let currentProfile = null;
 
 function initSupabase() {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    try {
+        if (!window.supabase || SUPABASE_URL === "REPLACE_ME") {
+            console.warn("Supabase not configured — auth disabled");
+            updateAuthUI();
+            return;
+        }
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    supabase.auth.onAuthStateChange(async (event, session) => {
-        if (session?.user) {
-            currentUser = session.user;
-            currentProfile = await fetchProfile();
-        } else {
-            currentUser = null;
-            currentProfile = null;
-        }
+        supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session?.user) {
+                currentUser = session.user;
+                currentProfile = await fetchProfile();
+            } else {
+                currentUser = null;
+                currentProfile = null;
+            }
+            updateAuthUI();
+            if (typeof onAuthChange === "function") {
+                onAuthChange(currentUser, currentProfile);
+            }
+        });
+    } catch (err) {
+        console.error("Supabase init failed:", err);
         updateAuthUI();
-        if (typeof onAuthChange === "function") {
-            onAuthChange(currentUser, currentProfile);
-        }
-    });
+    }
 }
 
 async function fetchProfile() {

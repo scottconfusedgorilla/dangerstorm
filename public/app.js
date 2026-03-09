@@ -700,5 +700,5 @@ function onAuthChange(user, profile) {
 }
 
 // Boot
-initSupabase();
+try { initSupabase(); } catch (e) { console.error("Supabase init error:", e); }
 restoreSession();
