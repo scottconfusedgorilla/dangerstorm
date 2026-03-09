@@ -64,9 +64,13 @@
                 <div class="output-header">
                     <h3>PITCH DECK PROMPT</h3>
                     <button class="copy-btn" data-target="output-1-content">Copy</button>
-                    <button id="open-in-claude-btn" class="copy-btn claude-btn" onclick="openInClaude()">Open in Claude</button>
                 </div>
                 <pre id="output-1-content" class="output-content"></pre>
+                <div class="output-links">
+                    <button class="link-btn claude-btn" onclick="openInClaude()">Open in Claude</button>
+                    <button class="link-btn copilot-btn" onclick="openInCopilot()">Open in Copilot</button>
+                    <button class="link-btn godaddy-btn" onclick="openDomainSearch()">Check Domain on GoDaddy</button>
+                </div>
             </div>
 
             <button id="generate-extras-btn" class="action-btn primary generate-extras-btn hidden" onclick="generateExtras()">
@@ -93,6 +97,9 @@
                     <button class="copy-btn" data-target="output-2-content">Copy</button>
                 </div>
                 <pre id="output-2-content" class="output-content"></pre>
+                <div class="output-links">
+                    <a class="link-btn carrd-btn" href="https://carrd.co/" target="_blank" rel="noopener">Go to Carrd</a>
+                </div>
             </div>
 
             <div class="output-block hidden" id="output-5">
@@ -115,6 +122,9 @@
                     <button class="copy-btn" data-target="output-3-content">Copy</button>
                 </div>
                 <pre id="output-3-content" class="output-content"></pre>
+                <div class="output-links">
+                    <a class="link-btn kit-btn" href="https://kit.com/" target="_blank" rel="noopener">Go to Kit</a>
+                </div>
             </div>
 
             <div class="output-block hidden" id="output-6">
@@ -123,6 +133,9 @@
                     <button class="copy-btn" data-target="output-6-content">Copy</button>
                 </div>
                 <pre id="output-6-content" class="output-content"></pre>
+                <div class="output-links">
+                    <button class="link-btn claude-btn" onclick="openBuildInClaude()">Open in Claude</button>
+                </div>
             </div>
         </div>
     </div>

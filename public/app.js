@@ -275,8 +275,28 @@ function parseOutputs(text) {
 function openInClaude() {
     const prompt = document.getElementById("output-1-content").textContent;
     if (!prompt) return;
-    const url = "https://claude.ai/new?q=" + encodeURIComponent(prompt);
-    window.open(url, "_blank");
+    window.open("https://claude.ai/new?q=" + encodeURIComponent(prompt), "_blank");
+}
+
+function openInCopilot() {
+    const prompt = document.getElementById("output-1-content").textContent;
+    if (!prompt) return;
+    window.open("https://copilot.microsoft.com/?q=" + encodeURIComponent(prompt), "_blank");
+}
+
+function openBuildInClaude() {
+    const prompt = document.getElementById("output-6-content").textContent;
+    if (!prompt) return;
+    window.open("https://claude.ai/new?q=" + encodeURIComponent(prompt), "_blank");
+}
+
+function openDomainSearch() {
+    const prompt = document.getElementById("output-1-content").textContent;
+    // Extract domain from deck prompt text
+    const match = prompt.match(/(?:domain[:\s]+|at\s+)([a-z0-9-]+\.[a-z]{2,})/i)
+        || prompt.match(/([a-z0-9-]+\.(?:com|net|org|io|co|ai|app|dev|xyz))/i);
+    const domain = match ? match[1] : "";
+    window.open("https://www.godaddy.com/en-ca/domainsearch/find?domainToCheck=" + encodeURIComponent(domain), "_blank");
 }
 
 function renderMockup(iframeId, html) {
