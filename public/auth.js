@@ -194,10 +194,17 @@ function showAuthModal() {
         submitBtn.disabled = true;
         submitBtn.textContent = isSignUp ? "Creating..." : "Signing in...";
 
-        const { error } = isSignUp
-            ? await signUpWithPassword(email, password)
-            : await signInWithPassword(email, password);
+        let result;
+        try {
+            result = isSignUp
+                ? await signUpWithPassword(email, password)
+                : await signInWithPassword(email, password);
+        } catch (err) {
+            console.error("Auth call threw:", err);
+            result = { error: { message: err.message || "Auth request failed." } };
+        }
 
+        const error = result.error;
         const msg = document.getElementById("auth-message");
         msg.classList.remove("hidden");
 
