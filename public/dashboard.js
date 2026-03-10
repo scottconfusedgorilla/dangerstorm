@@ -24,8 +24,13 @@ async function loadDashboard() {
     gridEl.innerHTML = "";
 
     if (profile) {
-        const max = profile.tier === "pro" ? 999 : 99;
+        const isPremium = profile.tier === "pro" || profile.tier === "pioneer";
+        const max = isPremium ? 99 : 19;
         countEl.textContent = `${profile.idea_count} of ${max} ideas used`;
+
+        // Show bulk download for Pro/Pioneer
+        const dlBtn = document.getElementById("download-all-dashboard-btn");
+        if (dlBtn) dlBtn.classList.toggle("hidden", !isPremium);
     }
 
     try {
@@ -368,6 +373,87 @@ async function saveOrder(grid) {
         await Promise.all(updates);
     } catch (err) {
         console.warn("Failed to save order:", err.message);
+    }
+}
+
+// Bulk download (Pro + Pioneer)
+async function downloadAllIdeas() {
+    const btn = document.getElementById("download-all-dashboard-btn");
+    if (btn) { btn.disabled = true; btn.textContent = "Exporting..."; }
+
+    try {
+        const ideas = await getIdeas();
+        if (!ideas.length) {
+            dsAlert("No ideas to download.");
+            return;
+        }
+
+        const zip = new JSZip();
+        const csvRows = [["Name", "Domain", "Tagline", "Status", "Created", "Updated"]];
+        const jsonExport = [];
+
+        for (const idea of ideas) {
+            const name = cleanName(idea.product_name) || "Untitled";
+            const safeName = name.replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 50);
+            const domain = (idea.domain === "None" || idea.domain?.startsWith("none-")) ? "" : idea.domain;
+
+            // Get latest version outputs
+            let outputs = {};
+            try {
+                const versions = await getIdeaVersions(idea.id);
+                if (versions.length) outputs = versions[0].outputs || {};
+            } catch (e) { /* skip */ }
+
+            // Add text files per idea
+            const folder = zip.folder(safeName);
+            if (outputs.output1) folder.file("pitch-deck.txt", outputs.output1);
+            if (outputs.output2) folder.file("carrd-copy.txt", outputs.output2);
+            if (outputs.output3) folder.file("kit-copy.txt", outputs.output3);
+            if (outputs.output6) folder.file("build-prompt.txt", outputs.output6);
+
+            // CSV row
+            csvRows.push([
+                name,
+                domain,
+                idea.tagline || "",
+                idea.status,
+                idea.created_at,
+                idea.updated_at,
+            ]);
+
+            // JSON entry
+            jsonExport.push({
+                id: idea.id,
+                name,
+                domain,
+                tagline: idea.tagline || "",
+                status: idea.status,
+                created_at: idea.created_at,
+                updated_at: idea.updated_at,
+                outputs,
+            });
+        }
+
+        // Add CSV
+        const csvContent = csvRows.map(row =>
+            row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+        ).join("\n");
+        zip.file("ideas-export.csv", csvContent);
+
+        // Add JSON
+        zip.file("ideas-export.json", JSON.stringify(jsonExport, null, 2));
+
+        const blob = await zip.generateAsync({ type: "blob" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "dangerstorm-ideas.zip";
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        dsAlert("Download failed: " + err.message);
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "Download All"; }
     }
 }
 

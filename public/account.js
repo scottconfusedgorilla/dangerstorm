@@ -16,11 +16,16 @@ function renderAccount(user, profile) {
 
     const tierSection = document.getElementById("account-tier-section");
 
-    if (profile?.tier === "pro") {
+    const tier = profile?.tier || "free";
+    const ideaCount = profile?.idea_count || 0;
+    const isPremium = tier === "pro" || tier === "pioneer";
+    const max = isPremium ? 99 : 19;
+
+    if (tier === "pro") {
         tierSection.innerHTML = `
             <div class="tier-display pro">
                 <span class="tier-badge pro">PRO</span>
-                <span>$9/month &mdash; up to 999 ideas</span>
+                <span>$9/month &mdash; ${ideaCount} of ${max} ideas used</span>
             </div>
             <button id="manage-billing-btn" class="action-btn">Manage Billing</button>
         `;
@@ -32,16 +37,23 @@ function renderAccount(user, profile) {
                 showMessage("Failed to open billing portal: " + err.message, "error");
             }
         });
+    } else if (tier === "pioneer") {
+        tierSection.innerHTML = `
+            <div class="tier-display pioneer">
+                <span class="tier-badge pioneer">PIONEER</span>
+                <span>Free forever &mdash; ${ideaCount} of ${max} ideas used</span>
+            </div>
+            <p class="text-muted" style="margin-top:8px;">You're an early adopter. Enjoy Pro-level access for life.</p>
+        `;
     } else {
-        const ideaCount = profile?.idea_count || 0;
         tierSection.innerHTML = `
             <div class="tier-display free">
                 <span class="tier-badge free">FREE</span>
-                <span>${ideaCount} of 5 ideas used</span>
+                <span>${ideaCount} of ${max} ideas used</span>
             </div>
             <div class="upgrade-card">
                 <h3>Upgrade to Pro</h3>
-                <p class="text-muted">$9/month &mdash; save up to 999 product ideas with full version history.</p>
+                <p class="text-muted">$9/month &mdash; save up to 99 product ideas with full version history and bulk download.</p>
                 <button id="upgrade-btn" class="action-btn primary">Upgrade to Pro &mdash; $9/mo</button>
             </div>
         `;

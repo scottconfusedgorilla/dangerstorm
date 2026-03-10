@@ -1,6 +1,9 @@
 import os
+import time
+import uuid as uuid_module
+from collections import defaultdict
 from functools import wraps
-from flask import Flask, request, jsonify, send_from_directory, Response
+from flask import Flask, request, jsonify, send_from_directory, Response, make_response
 from dotenv import load_dotenv
 import anthropic
 import json
@@ -63,6 +66,34 @@ def require_auth(f):
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "")
+
+# Anonymous rate limiting
+ANON_DAILY_LIMIT = 3
+anonymous_usage = defaultdict(list)  # { "ip:cookie": [timestamp, ...] }
+
+
+def get_anon_identifier(req):
+    """Build identifier from IP + cookie UUID."""
+    ip = req.headers.get("X-Forwarded-For", req.remote_addr)
+    if ip and "," in ip:
+        ip = ip.split(",")[0].strip()
+    cookie = req.cookies.get("ds_anon", "")
+    return f"{ip}:{cookie}", ip, cookie
+
+
+def check_anon_limit(req):
+    """Check if anonymous user has remaining conversations. Returns (allowed, remaining, identifier, cookie)."""
+    ident, ip, cookie = get_anon_identifier(req)
+    if not cookie:
+        cookie = uuid_module.uuid4().hex
+        ident = f"{ip}:{cookie}"
+    now = time.time()
+    cutoff = now - 86400  # 24 hours
+    # Prune old entries
+    anonymous_usage[ident] = [t for t in anonymous_usage[ident] if t > cutoff]
+    used = len(anonymous_usage[ident])
+    remaining = max(0, ANON_DAILY_LIMIT - used)
+    return used < ANON_DAILY_LIMIT, remaining, ident, cookie
 
 SYSTEM_PROMPT = """You are DangerStorm — a confident, direct, product-savvy AI that helps people turn product ideas into professional pitch deck prompts in under 90 seconds.
 
@@ -182,6 +213,15 @@ def chat():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/anon-status")
+def anon_status():
+    allowed, remaining, ident, cookie = check_anon_limit(request)
+    resp = make_response(jsonify({"remaining": remaining, "limit": ANON_DAILY_LIMIT}))
+    if not request.cookies.get("ds_anon"):
+        resp.set_cookie("ds_anon", cookie, max_age=86400 * 365, httponly=True, samesite="Lax")
+    return resp
+
+
 @app.route("/api/chat/stream", methods=["POST"])
 def chat_stream():
     data = request.json
@@ -190,6 +230,26 @@ def chat_stream():
 
     if not messages:
         return jsonify({"error": "No messages provided"}), 400
+
+    # Anonymous rate limiting: check if unauthenticated user has remaining conversations
+    auth_header = request.headers.get("Authorization", "")
+    is_authenticated = False
+    if auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1]
+        if get_supabase_user(token):
+            is_authenticated = True
+
+    anon_cookie = None
+    if not is_authenticated:
+        # Count new conversations only (first user message = messages has opener + 1 user msg)
+        user_msg_count = sum(1 for m in messages if m.get("role") == "user")
+        if user_msg_count <= 1:
+            allowed, remaining, ident, cookie = check_anon_limit(request)
+            anon_cookie = cookie
+            if not allowed:
+                return jsonify({"error": "anon_limit", "remaining": 0}), 403
+            # Record this new conversation
+            anonymous_usage[ident].append(time.time())
 
     # Log the latest user prompt with IP address for patent/IP documentation
     try:
@@ -276,7 +336,7 @@ def chat_stream():
             print(f"[stream] Exception after {token_count} chunks: {type(e).__name__}: {e}", flush=True)
             yield f"data: {json.dumps({'error': f'Stream error: {str(e)}'})}\n\n"
 
-    return Response(
+    resp = Response(
         generate(),
         mimetype="text/event-stream",
         headers={
@@ -285,6 +345,9 @@ def chat_stream():
             "Connection": "keep-alive",
         },
     )
+    if anon_cookie and not request.cookies.get("ds_anon"):
+        resp.set_cookie("ds_anon", anon_cookie, max_age=86400 * 365, httponly=True, samesite="Lax")
+    return resp
 
 
 EXTRAS_SYSTEM_PROMPT = """You are DangerStorm's output generator. Given a pitch deck prompt that was already generated, produce three additional outputs for the product. Use these exact markers:
@@ -508,7 +571,7 @@ def save_idea():
 
         tier = profile.data["tier"]
         idea_count = profile.data["idea_count"]
-        max_ideas = 999 if tier == "pro" else 99
+        max_ideas = 99 if tier in ("pro", "pioneer") else 19
 
         # Check if this domain already has a non-trashed idea (skip for domainless ideas)
         force = data.get("force", False)
@@ -718,9 +781,13 @@ def stripe_webhook():
         subscription = event["data"]["object"]
         customer_id = subscription.get("customer")
 
-        # Find the profile by stripe_customer_id and downgrade
+        # Downgrade: revert to pioneer (early adopter) or free
+        # Check if user was pioneer before upgrading
+        profile = sb.table("profiles").select("created_at").eq("stripe_customer_id", customer_id).single().execute()
+        # Early adopters (pioneer) keep pioneer status; others go to free
+        # For now, all existing users are pioneers, so revert to pioneer
         sb.table("profiles").update({
-            "tier": "free",
+            "tier": "pioneer",
             "stripe_subscription_id": None,
         }).eq("stripe_customer_id", customer_id).execute()
 

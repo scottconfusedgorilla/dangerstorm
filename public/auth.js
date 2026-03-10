@@ -156,11 +156,11 @@ function updateAuthUI() {
     if (currentUser) {
         const email = currentUser.email;
         const tier = currentProfile?.tier || "free";
-        const tierLabel = tier === "pro" ? "Pro" : "Pioneer";
+        const tierLabel = { pro: "Pro", pioneer: "Pioneer", free: "Free" }[tier] || "Free";
         authBar.innerHTML = `
             <div class="auth-user">
                 <a href="/dashboard" class="auth-dashboard-btn" title="Dashboard">
-                    <svg class="header-bolt" width="10" height="14" viewBox="0 0 24 40" fill="currentColor"><polygon points="14,0 6,18 14,18 4,40 22,16 13,16 20,0"/></svg>
+                    <svg class="header-bolt" width="12" height="16" viewBox="0 0 24 40" fill="currentColor"><polygon points="14,0 6,18 14,18 4,40 22,16 13,16 20,0"/></svg>
                     Dashboard
                 </a>
                 <span class="auth-identity">${email} · ${tierLabel}</span>
@@ -293,7 +293,8 @@ function requireAuth(action) {
 
 function checkIdeaLimit() {
     if (!currentProfile) return { allowed: false, reason: "not_authenticated" };
-    const max = currentProfile.tier === "pro" ? 999 : 99;
+    const tier = currentProfile.tier;
+    const max = (tier === "pro" || tier === "pioneer") ? 99 : 19;
     if (currentProfile.idea_count >= max) {
         return { allowed: false, reason: "limit_reached", max };
     }

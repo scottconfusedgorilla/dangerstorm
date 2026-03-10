@@ -20,7 +20,7 @@
                 <div id="auth-bar"><button id="sign-in-btn" class="auth-link-btn" onclick="if(typeof showAuthModal==='function')showAuthModal()">Sign in</button></div>
             </div>
             <p class="tagline">One idea. One domain. One deck.</p>
-            <p class="build-number">build 051</p>
+            <p class="build-number">build 053</p>
         </header>
 
         <div id="chat-container">
@@ -36,6 +36,7 @@
                 <button id="chat-start-over-btn" class="chat-action-btn">Start Over</button>
             </div>
             <div id="chat-save-status" class="save-status hidden"></div>
+            <div id="anon-remaining" class="anon-remaining hidden"></div>
 
             <div id="input-area">
                 <input type="file" id="file-input" accept="image/*,.txt,.md,.csv,.json,.pdf" hidden>
@@ -67,6 +68,10 @@
                 <button id="start-over-btn" class="action-btn">Start Over</button>
             </div>
             <div id="save-status" class="save-status hidden"></div>
+            <div id="anon-cta" class="anon-cta hidden">
+                <p>Sign up free to save this idea and access it anytime from your dashboard.</p>
+                <button class="action-btn primary" onclick="showAuthModal()">Create Free Account</button>
+            </div>
 
             <div class="output-block" id="output-1">
                 <div class="output-header">

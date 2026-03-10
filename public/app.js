@@ -342,6 +342,15 @@ function showOutputs(output1, output2, output3, output5, output6) {
 
     outputsContainer.classList.remove("hidden");
     outputsContainer.scrollIntoView({ behavior: "smooth" });
+
+    // Anonymous users: hide save, show sign-up CTA
+    if (!getUser()) {
+        document.getElementById("save-idea-btn").classList.add("hidden");
+        document.getElementById("anon-cta").classList.remove("hidden");
+    } else {
+        document.getElementById("save-idea-btn").classList.remove("hidden");
+        document.getElementById("anon-cta").classList.add("hidden");
+    }
 }
 
 async function sendMessage() {
@@ -393,13 +402,28 @@ async function sendMessage() {
     addTypingIndicator();
 
     try {
+        const streamHeaders = { "Content-Type": "application/json" };
+        const token = typeof getAccessToken === "function" ? await getAccessToken().catch(() => null) : null;
+        if (token) streamHeaders["Authorization"] = `Bearer ${token}`;
+
         const response = await fetch("/api/chat/stream", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: streamHeaders,
             body: JSON.stringify({ messages: conversationHistory, userEmail: getUser()?.email || "" }),
         });
 
         removeTypingIndicator();
+
+        // Handle anonymous rate limit
+        if (response.status === 403) {
+            const errData = await response.json().catch(() => ({}));
+            if (errData.error === "anon_limit") {
+                addMessage("assistant", "You've used your 3 free conversations for today. Sign up for a free account to keep going — and save your ideas too!");
+                updateAnonRemaining(0);
+                showAuthModal();
+                return;
+            }
+        }
 
         const msgDiv = addMessage("assistant", "");
         let fullText = "";
@@ -516,7 +540,7 @@ async function doSaveIdea(btn) {
     const limit = checkIdeaLimit();
     if (!limit.allowed) {
         if (limit.reason === "limit_reached") {
-            showSaveStatus(`You've hit the ${limit.max}-idea limit.`, "error");
+            showSaveStatus(`You've reached ${limit.max} ideas. <a href="/account" style="color:inherit;text-decoration:underline;">Upgrade to Pro</a> for up to 99.`, "error");
         }
         return;
     }
@@ -585,8 +609,18 @@ async function doSaveIdea(btn) {
         currentIdeaId = result.ideaId;
         currentVersionNumber = result.versionNumber;
         updateIdeaUrl(getUser().id, result.ideaId);
-        showSaveStatus('Idea saved! Find it in your <a href="/dashboard" style="color:inherit;text-decoration:underline;">Dashboard</a>.', "success");
         currentProfile = await fetchProfile();
+
+        // Approaching-limit warning for free tier
+        const tier = currentProfile?.tier || "free";
+        const count = currentProfile?.idea_count || 0;
+        const isPremium = tier === "pro" || tier === "pioneer";
+        const max = isPremium ? 99 : 19;
+        if (!isPremium && count >= 15) {
+            showSaveStatus(`Saved! You've used ${count} of ${max} ideas. <a href="/account" style="color:inherit;text-decoration:underline;">Upgrade to Pro</a> for 99.`, "warning");
+        } else {
+            showSaveStatus('Idea saved! Find it in your <a href="/dashboard" style="color:inherit;text-decoration:underline;">Dashboard</a>.', "success");
+        }
     } catch (err) {
         showSaveStatus("Failed to save: " + err.message, "error");
     } finally {
@@ -666,9 +700,47 @@ async function loadSavedIdea(ideaId) {
     }
 }
 
+// ---- Anonymous conversation counter ----
+function updateAnonRemaining(remaining) {
+    const el = document.getElementById("anon-remaining");
+    if (!el) return;
+    if (getUser()) {
+        el.classList.add("hidden");
+        return;
+    }
+    el.textContent = `${remaining} of ${3} free conversation${remaining !== 1 ? "s" : ""} remaining today`;
+    el.classList.remove("hidden");
+}
+
+async function fetchAnonStatus() {
+    if (getUser()) return;
+    try {
+        const resp = await fetch("/api/anon-status");
+        const data = await resp.json();
+        updateAnonRemaining(data.remaining);
+    } catch (e) { /* ignore */ }
+}
+
+// Hide chat save button for anonymous users
+function updateAnonUI() {
+    const chatSaveBtn = document.getElementById("chat-save-btn");
+    if (chatSaveBtn) {
+        chatSaveBtn.classList.toggle("hidden", !getUser());
+    }
+}
+
 // ---- Auth callback ----
 function onAuthChange(user, profile) {
-    // Could refresh UI elements based on auth state
+    updateAnonUI();
+    if (user) {
+        // Hide anon elements when logged in
+        const anonEl = document.getElementById("anon-remaining");
+        if (anonEl) anonEl.classList.add("hidden");
+        const ctaEl = document.getElementById("anon-cta");
+        if (ctaEl) ctaEl.classList.add("hidden");
+        const saveBtn = document.getElementById("save-idea-btn");
+        if (saveBtn) saveBtn.classList.remove("hidden");
+    }
 }
 
 // Fetch IP once for message stamps
@@ -679,6 +751,8 @@ fetch("/api/session-info")
 
 // Boot
 try { initSupabase(); } catch (e) { console.error("Supabase init error:", e); }
+fetchAnonStatus();
+updateAnonUI();
 
 // Parse URL to determine boot mode
 const urlParams = new URLSearchParams(window.location.search);
