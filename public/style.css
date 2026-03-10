@@ -118,7 +118,8 @@ header {
     letter-spacing: 0.05em;
 }
 
-.tier-badge.free {
+.tier-badge.free,
+.tier-badge.pioneer {
     background: var(--border);
     color: var(--text-muted);
 }
@@ -811,6 +812,32 @@ header .tagline {
     color: var(--text-muted);
 }
 
+.trash-can-btn {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: transparent;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-muted);
+    padding: 12px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    opacity: 0.5;
+}
+
+.trash-can-btn:hover {
+    color: #EF4444;
+    border-color: #EF4444;
+    opacity: 1;
+}
+
+.trash-can-btn.active {
+    color: #EF4444;
+    border-color: #EF4444;
+    opacity: 1;
+}
+
 .dashboard-empty.hidden {
     display: none;
 }
@@ -838,9 +865,34 @@ header .tagline {
     border-color: var(--accent);
 }
 
-.idea-card.drag-over {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px var(--accent);
+.idea-card.drag-over-top {
+    position: relative;
+}
+
+.idea-card.drag-over-top::before {
+    content: "";
+    position: absolute;
+    top: -9px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+}
+
+.idea-card.drag-over-bottom {
+    position: relative;
+}
+
+.idea-card.drag-over-bottom::after {
+    content: "";
+    position: absolute;
+    bottom: -9px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 2px;
 }
 
 .drag-handle {

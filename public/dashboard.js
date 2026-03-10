@@ -26,9 +26,6 @@ async function loadDashboard() {
     if (profile) {
         const max = profile.tier === "pro" ? 999 : 99;
         countEl.textContent = `${profile.idea_count} of ${max} ideas used`;
-        if (profile.tier === "free" && profile.idea_count >= 90) {
-            countEl.innerHTML += ' &mdash; <a href="/account" class="upgrade-link">Upgrade to Pro</a>';
-        }
     }
 
     try {
@@ -43,7 +40,7 @@ async function loadDashboard() {
 
         gridEl.innerHTML = ideas.map((idea) => {
             const versionCount = idea.idea_versions?.[0]?.count || 0;
-            const updated = new Date(idea.updated_at).toLocaleDateString();
+            const updated = new Date(idea.updated_at).toLocaleString();
             const domain = (idea.domain === "None" || idea.domain.startsWith("none-")) ? "No domain" : idea.domain;
             const name = cleanName(idea.product_name) || "Untitled";
             const summary = idea.tagline || "";
@@ -124,11 +121,10 @@ let showingTrash = false;
 function toggleTrash() {
     showingTrash = !showingTrash;
     const btn = document.getElementById("trash-toggle-btn");
+    btn.classList.toggle("active", showingTrash);
     if (showingTrash) {
-        btn.innerHTML = '&larr; Back to Ideas';
         loadTrash();
     } else {
-        btn.innerHTML = '&#128465; Crappy Ideas';
         loadDashboard();
     }
 }
@@ -153,7 +149,7 @@ async function loadTrash() {
         }
 
         gridEl.innerHTML = ideas.map((idea) => {
-            const updated = new Date(idea.updated_at).toLocaleDateString();
+            const updated = new Date(idea.updated_at).toLocaleString();
             const domain = (idea.domain === "None" || idea.domain.startsWith("none-")) ? "No domain" : idea.domain;
 
             return `
@@ -191,6 +187,10 @@ function escapeHtml(text) {
 // Drag and drop sorting
 let draggedCard = null;
 
+function clearDropIndicators(grid) {
+    grid.querySelectorAll(".idea-card").forEach((c) => c.classList.remove("drag-over-top", "drag-over-bottom"));
+}
+
 function initDragAndDrop(grid) {
     const cards = grid.querySelectorAll(".idea-card");
 
@@ -204,30 +204,34 @@ function initDragAndDrop(grid) {
         card.addEventListener("dragend", () => {
             card.classList.remove("dragging");
             draggedCard = null;
-            // Remove all drop indicators
-            grid.querySelectorAll(".idea-card").forEach((c) => c.classList.remove("drag-over"));
-            // Persist new order
+            clearDropIndicators(grid);
             saveOrder(grid);
         });
 
         card.addEventListener("dragover", (e) => {
             e.preventDefault();
             e.dataTransfer.dropEffect = "move";
-            if (card !== draggedCard) {
-                card.classList.add("drag-over");
+            if (card === draggedCard) return;
+
+            clearDropIndicators(grid);
+            const rect = card.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            if (e.clientY < midY) {
+                card.classList.add("drag-over-top");
+            } else {
+                card.classList.add("drag-over-bottom");
             }
         });
 
         card.addEventListener("dragleave", () => {
-            card.classList.remove("drag-over");
+            card.classList.remove("drag-over-top", "drag-over-bottom");
         });
 
         card.addEventListener("drop", (e) => {
             e.preventDefault();
-            card.classList.remove("drag-over");
+            clearDropIndicators(grid);
             if (card === draggedCard) return;
 
-            // Determine position: insert before or after based on mouse position
             const rect = card.getBoundingClientRect();
             const midY = rect.top + rect.height / 2;
             if (e.clientY < midY) {

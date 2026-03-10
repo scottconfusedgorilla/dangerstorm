@@ -151,7 +151,7 @@ function updateAuthUI() {
     if (currentUser) {
         const name = currentProfile?.display_name || currentUser.email;
         const tier = currentProfile?.tier || "free";
-        const tierBadge = tier === "pro" ? '<span class="tier-badge pro">PRO</span>' : '<span class="tier-badge free">FREE</span>';
+        const tierBadge = tier === "pro" ? '<span class="tier-badge pro">PRO</span>' : '<span class="tier-badge pioneer">PIONEER</span>';
         authBar.innerHTML = `
             <div class="auth-user">
                 <div class="auth-user-top">
@@ -275,7 +275,7 @@ function requireAuth(action) {
 
 function checkIdeaLimit() {
     if (!currentProfile) return { allowed: false, reason: "not_authenticated" };
-    const max = currentProfile.tier === "pro" ? 999 : 5;
+    const max = currentProfile.tier === "pro" ? 999 : 99;
     if (currentProfile.idea_count >= max) {
         return { allowed: false, reason: "limit_reached", max };
     }

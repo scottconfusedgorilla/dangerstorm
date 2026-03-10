@@ -516,7 +516,7 @@ document.getElementById("save-idea-btn").addEventListener("click", async () => {
     const limit = checkIdeaLimit();
     if (!limit.allowed) {
         if (limit.reason === "limit_reached") {
-            showSaveStatus(`You've hit the ${limit.max}-idea limit. Upgrade to Pro for more.`, "error");
+            showSaveStatus(`You've hit the ${limit.max}-idea limit.`, "error");
         }
         return;
     }
