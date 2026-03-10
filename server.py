@@ -187,6 +187,41 @@ def chat_stream():
     if not messages:
         return jsonify({"error": "No messages provided"}), 400
 
+    # Log the latest user prompt with IP address for patent/IP documentation
+    try:
+        latest_user_msg = None
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                content = msg.get("content", "")
+                if isinstance(content, list):
+                    latest_user_msg = " ".join(p.get("text", "") for p in content if p.get("type") == "text")
+                else:
+                    latest_user_msg = content
+                break
+        if latest_user_msg:
+            ip_address = request.headers.get("X-Forwarded-For", request.remote_addr)
+            if ip_address and "," in ip_address:
+                ip_address = ip_address.split(",")[0].strip()
+            # Look up user_id from email if available
+            user_id = None
+            if user_email:
+                try:
+                    sb = get_supabase()
+                    profile = sb.table("profiles").select("id").eq("email", user_email).limit(1).execute()
+                    if profile.data:
+                        user_id = profile.data[0]["id"]
+                except Exception:
+                    pass
+            sb = get_supabase()
+            sb.table("prompt_log").insert({
+                "user_id": user_id,
+                "user_email": user_email or None,
+                "ip_address": ip_address or "unknown",
+                "prompt_text": latest_user_msg[:10000],  # cap at 10k chars
+            }).execute()
+    except Exception as e:
+        print(f"[prompt-log] Failed to log prompt: {e}", flush=True)
+
     # Build system prompt, injecting user email context if available
     system = SYSTEM_PROMPT
     if user_email:
