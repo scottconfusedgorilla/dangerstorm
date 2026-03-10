@@ -67,9 +67,9 @@ async function loadDashboard() {
 }
 
 function openIdea(ideaId) {
-    // Store the idea ID and redirect to chat page
-    localStorage.setItem("dangerstorm_open_idea", ideaId);
-    window.location.href = "/";
+    const user = getUser();
+    if (!user) return;
+    window.location.href = `/${user.id}/${ideaId}`;
 }
 
 async function confirmDelete(ideaId, name) {

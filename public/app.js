@@ -576,8 +576,32 @@ document.getElementById("save-idea-btn").addEventListener("click", async () => {
 
     try {
         const result = await saveIdea(domain, productName, "", conversationHistory, outputs);
+
+        // Handle domain conflict
+        if (result.conflict) {
+            const action = confirm(
+                `"${result.existingName}" already uses ${result.domain}.\n\nClick OK to save as a new version of that idea, or Cancel to open it instead.`
+            );
+            if (action) {
+                // Force save as new version
+                const forced = await saveIdea(domain, productName, "", conversationHistory, outputs, true);
+                currentIdeaId = forced.ideaId;
+                currentVersionNumber = forced.versionNumber;
+                updateIdeaUrl(getUser().id, forced.ideaId);
+                showSaveStatus("Saved as new version!", "success");
+                currentProfile = await fetchProfile();
+            } else {
+                // Open existing idea via URL
+                window.location.href = `/${getUser().id}/${result.existingId}`;
+            }
+            btn.disabled = false;
+            btn.textContent = "Save Idea";
+            return;
+        }
+
         currentIdeaId = result.ideaId;
         currentVersionNumber = result.versionNumber;
+        updateIdeaUrl(getUser().id, result.ideaId);
         showSaveStatus("Idea saved! Find it in your Dashboard.", "success");
         // Refresh profile to get updated idea_count
         currentProfile = await fetchProfile();
@@ -596,6 +620,56 @@ function showSaveStatus(message, type) {
     setTimeout(() => el.classList.add("hidden"), 5000);
 }
 
+function updateIdeaUrl(userId, ideaId) {
+    history.replaceState(null, "", `/${userId}/${ideaId}`);
+}
+
+// ---- Load saved idea from URL ----
+async function loadSavedIdea(ideaId) {
+    try {
+        const idea = await getIdea(ideaId);
+        const versions = await getIdeaVersions(ideaId);
+        if (!versions.length) {
+            initConversation();
+            return;
+        }
+
+        const latest = versions[0]; // already sorted desc by version_number
+        currentIdeaId = ideaId;
+        currentVersionNumber = latest.version_number;
+
+        // Restore conversation from saved version
+        if (latest.conversation && latest.conversation.length > 0) {
+            conversationHistory = latest.conversation;
+            for (const msg of conversationHistory) {
+                const text = typeof msg.content === "string"
+                    ? msg.content
+                    : msg.content.filter((p) => p.type === "text").map((p) => p.text).join("\n");
+                const parsed = parseOutputs(text);
+                if (msg.role === "assistant" && parsed.hasOutputs) {
+                    addMessage("assistant", parsed.conversationText || "Here are your outputs:");
+                    showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output6);
+                } else {
+                    addMessage(msg.role, text.replace(/===OUTPUT_\d_(?:START|END)===/g, "").trim());
+                }
+            }
+        } else {
+            initConversation();
+        }
+
+        // Restore outputs if saved separately
+        if (latest.outputs) {
+            const o = latest.outputs;
+            if (o.output1) showOutputs(o.output1, o.output2 || "", o.output3 || "", o.output6 || "");
+        }
+
+        inputEl.placeholder = "Tell me what to change...";
+    } catch (err) {
+        console.error("Failed to load idea:", err);
+        initConversation();
+    }
+}
+
 // ---- Auth callback ----
 function onAuthChange(user, profile) {
     // Could refresh UI elements based on auth state
@@ -603,4 +677,20 @@ function onAuthChange(user, profile) {
 
 // Boot
 try { initSupabase(); } catch (e) { console.error("Supabase init error:", e); }
-restoreSession();
+
+// Parse URL to determine boot mode
+const urlParams = new URLSearchParams(window.location.search);
+const pathParts = window.location.pathname.split("/").filter(Boolean);
+
+if (urlParams.get("new") === "1") {
+    // Dashboard "New Idea" — start fresh
+    clearSession();
+    history.replaceState(null, "", "/");
+    initConversation();
+} else if (pathParts.length === 2) {
+    // URL like /{userId}/{ideaId} — load saved idea
+    clearSession();
+    loadSavedIdea(pathParts[1]);
+} else {
+    restoreSession();
+}

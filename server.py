@@ -408,6 +408,12 @@ def account():
     return send_from_directory("public", "account.html")
 
 
+@app.route("/<user_id>/<idea_id>")
+def view_idea(user_id, idea_id):
+    """Serve the main app for bookmarkable idea URLs like /{userId}/{ideaId}"""
+    return send_from_directory("public", "index.html")
+
+
 @app.route("/api/save-idea", methods=["POST"])
 @require_auth
 def save_idea():
@@ -431,12 +437,22 @@ def save_idea():
         idea_count = profile.data["idea_count"]
         max_ideas = 999 if tier == "pro" else 5
 
-        # Check if this domain already has an idea (update, not count against limit)
-        existing = sb.table("ideas").select("id").eq("user_id", user_id).eq("domain", domain).execute()
+        # Check if this domain already has an idea
+        existing = sb.table("ideas").select("id, product_name").eq("user_id", user_id).eq("domain", domain).execute()
         is_new = len(existing.data) == 0
+        force = data.get("force", False)
 
         if is_new and idea_count >= max_ideas:
             return jsonify({"error": f"Idea limit reached ({max_ideas}). Upgrade to Pro for more."}), 403
+
+        # If domain already exists and not forcing, return conflict
+        if not is_new and not force:
+            return jsonify({
+                "conflict": True,
+                "existingId": existing.data[0]["id"],
+                "existingName": existing.data[0]["product_name"],
+                "domain": domain,
+            }), 409
 
         # Upsert idea
         if is_new:

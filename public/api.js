@@ -2,7 +2,7 @@
 // DangerStorm — Supabase Data & Storage API
 // ============================================
 
-async function saveIdea(domain, productName, tagline, conversation, outputs) {
+async function saveIdea(domain, productName, tagline, conversation, outputs, force = false) {
     const token = await getAccessToken();
     if (!token) throw new Error("Not authenticated");
 
@@ -12,10 +12,11 @@ async function saveIdea(domain, productName, tagline, conversation, outputs) {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({ domain, productName, tagline, conversation, outputs }),
+        body: JSON.stringify({ domain, productName, tagline, conversation, outputs, force }),
     });
 
     const data = await response.json();
+    if (response.status === 409 && data.conflict) return data; // domain conflict
     if (!response.ok) throw new Error(data.error || "Failed to save idea");
     return data;
 }
