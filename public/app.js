@@ -17,6 +17,7 @@ let conversationHistory = [];
 let isWaiting = false;
 let pendingFile = null; // { name, type, data } — data is base64 for images, text for text files
 let userHasScrolled = false;
+let sessionIP = null; // fetched once on load for message stamps
 
 // Detect manual scroll: pause auto-scroll when user scrolls up
 window.addEventListener("scroll", () => {
@@ -216,10 +217,21 @@ document.getElementById("download-all-btn").addEventListener("click", async () =
     URL.revokeObjectURL(url);
 });
 
+function addMessageStamp(div) {
+    const stamp = document.createElement("div");
+    stamp.className = "message-stamp";
+    const now = new Date().toLocaleString();
+    stamp.textContent = sessionIP
+        ? `${now} — IP: ${sessionIP}`
+        : now;
+    div.appendChild(stamp);
+}
+
 function addMessage(role, text) {
     const div = document.createElement("div");
     div.className = `message ${role}`;
     div.textContent = text;
+    if (role === "user") addMessageStamp(div);
     messagesEl.appendChild(div);
     autoScroll();
     return div;
@@ -238,6 +250,7 @@ function addMessageWithAttachment(role, text, fileName) {
     textNode.textContent = text;
     div.appendChild(textNode);
 
+    if (role === "user") addMessageStamp(div);
     messagesEl.appendChild(div);
     autoScroll();
     return div;
@@ -620,16 +633,10 @@ function onAuthChange(user, profile) {
     // Could refresh UI elements based on auth state
 }
 
-// Show session info (IP + timestamp) for transparency
+// Fetch IP once for message stamps
 fetch("/api/session-info")
     .then((r) => r.json())
-    .then((info) => {
-        const el = document.getElementById("session-info");
-        if (el && info.ip) {
-            const now = new Date().toLocaleString();
-            el.textContent = `Your IP: ${info.ip} — Session started: ${now}`;
-        }
-    })
+    .then((info) => { sessionIP = info.ip || null; })
     .catch(() => {});
 
 // Boot

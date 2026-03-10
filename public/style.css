@@ -1099,10 +1099,9 @@ header .tagline {
     margin: 0 0.5rem;
 }
 
-.session-info {
-    text-align: center;
-    font-size: 0.7rem;
+.message-stamp {
+    font-size: 0.65rem;
     color: var(--text-muted);
-    opacity: 0.5;
-    padding: 0.25rem 0 0;
+    opacity: 0.6;
+    margin-top: 0.3rem;
 }
