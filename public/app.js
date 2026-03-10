@@ -26,7 +26,7 @@ window.addEventListener("scroll", () => {
 
 function autoScroll() {
     if (!userHasScrolled) {
-        autoScroll();
+        window.scrollTo(0, document.body.scrollHeight);
     }
 }
 
