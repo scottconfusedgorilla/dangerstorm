@@ -536,18 +536,15 @@ document.getElementById("save-idea-btn").addEventListener("click", async () => {
     const deckText = outputs.output1;
     const domainMatch = deckText.match(/domain[:\s]+([a-z0-9.-]+\.[a-z]{2,})/i);
     const domain = domainMatch ? domainMatch[1] : "None";
-    // Use AI-generated summary (OUTPUT_5) as label, fall back to regex extraction
-    let productName = currentSummary || "";
-    if (!productName) {
-        const nameMatch = deckText.match(/product\s*name[:\s]+([^\n]+)/i);
-        productName = nameMatch ? nameMatch[1].trim().replace(/\*+/g, "") : "Untitled Idea";
-    }
+    const nameMatch = deckText.match(/product\s*name[:\s]+([^\n]+)/i);
+    const productName = nameMatch ? nameMatch[1].trim().replace(/\*+/g, "") : "Untitled Idea";
+    const tagline = currentSummary || "";
 
     btn.disabled = true;
     btn.textContent = "Saving...";
 
     try {
-        const result = await saveIdea(domain, productName, "", conversationHistory, outputs);
+        const result = await saveIdea(domain, productName, tagline, conversationHistory, outputs);
 
         // Handle domain conflict
         if (result.conflict) {

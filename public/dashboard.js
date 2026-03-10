@@ -46,6 +46,7 @@ async function loadDashboard() {
             const updated = new Date(idea.updated_at).toLocaleDateString();
             const domain = idea.domain === "None" ? "No domain" : idea.domain;
             const name = cleanName(idea.product_name) || "Untitled";
+            const summary = idea.tagline || "";
 
             return `
                 <div class="idea-card" data-id="${idea.id}" draggable="true">
@@ -54,6 +55,7 @@ async function loadDashboard() {
                         <h3 class="idea-name">${escapeHtml(name)}</h3>
                         <span class="idea-status ${idea.status}">${idea.status}</span>
                     </div>
+                    ${summary ? `<p class="idea-summary">${escapeHtml(summary)}</p>` : ""}
                     <p class="idea-domain">${escapeHtml(domain)}</p>
                     <div class="idea-meta">
                         <span>${versionCount} version${versionCount !== 1 ? "s" : ""}</span>

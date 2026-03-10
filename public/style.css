@@ -909,6 +909,13 @@ header .tagline {
     align-items: center;
 }
 
+.idea-summary {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin: 2px 0 4px;
+    line-height: 1.3;
+}
+
 .idea-domain {
     color: var(--accent);
     font-size: 0.85rem;
