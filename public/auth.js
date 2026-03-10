@@ -154,10 +154,14 @@ function updateAuthUI() {
         const tierBadge = tier === "pro" ? '<span class="tier-badge pro">PRO</span>' : '<span class="tier-badge free">FREE</span>';
         authBar.innerHTML = `
             <div class="auth-user">
-                ${tierBadge}
-                <span class="auth-name">${name}</span>
-                <a href="/dashboard" class="auth-link">Dashboard</a>
-                <button id="sign-out-btn" class="auth-link-btn">Sign out</button>
+                <div class="auth-user-top">
+                    ${tierBadge}
+                    <span class="auth-name">${name}</span>
+                </div>
+                <div class="auth-user-links">
+                    <a href="/dashboard" class="auth-link">Dashboard</a>
+                    <button id="sign-out-btn" class="auth-link-btn">Sign out</button>
+                </div>
             </div>
         `;
         document.getElementById("sign-out-btn").addEventListener("click", signOut);

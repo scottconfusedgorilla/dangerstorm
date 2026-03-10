@@ -33,6 +33,7 @@ async function loadDashboard() {
 
     try {
         const ideas = await getIdeas();
+
         loadingEl.classList.add("hidden");
 
         if (ideas.length === 0) {
@@ -125,7 +126,7 @@ function toggleTrash() {
         btn.innerHTML = '&larr; Back to Ideas';
         loadTrash();
     } else {
-        btn.innerHTML = '&#128465; Trash';
+        btn.innerHTML = '&#128465; Crappy Ideas';
         loadDashboard();
     }
 }

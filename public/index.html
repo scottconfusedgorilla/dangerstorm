@@ -63,36 +63,46 @@
             <div class="output-block" id="output-1">
                 <div class="output-header">
                     <h3>PITCH DECK PROMPT</h3>
-                    <button class="copy-btn" data-target="output-1-content">Copy</button>
+                    <div class="output-header-actions">
+                        <button class="icon-btn claude-btn" onclick="openInClaude()" title="Open in Claude">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                        </button>
+                        <button class="icon-btn copilot-btn" onclick="openInCopilot()" title="Copy &amp; Open Copilot">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        </button>
+                        <button class="icon-btn godaddy-btn" onclick="openDomainSearch()" title="Check Domain on GoDaddy">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </button>
+                        <button class="copy-btn" data-target="output-1-content">Copy</button>
+                    </div>
                 </div>
                 <pre id="output-1-content" class="output-content"></pre>
-                <div class="output-links">
-                    <button class="link-btn claude-btn" onclick="openInClaude()">Open in Claude</button>
-                    <button class="link-btn copilot-btn" onclick="openInCopilot()">Copy &amp; Open Copilot</button>
-                    <button class="link-btn godaddy-btn" onclick="openDomainSearch()">Check Domain on GoDaddy</button>
-                </div>
             </div>
 
             <div class="output-block hidden" id="output-2">
                 <div class="output-header">
                     <h3>CARRD LANDING PAGE COPY</h3>
-                    <button class="copy-btn" data-target="output-2-content">Copy</button>
+                    <div class="output-header-actions">
+                        <a class="icon-btn carrd-btn" href="https://carrd.co/" target="_blank" rel="noopener" title="Go to Carrd">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        </a>
+                        <button class="copy-btn" data-target="output-2-content">Copy</button>
+                    </div>
                 </div>
                 <pre id="output-2-content" class="output-content"></pre>
-                <div class="output-links">
-                    <a class="link-btn carrd-btn" href="https://carrd.co/" target="_blank" rel="noopener">Go to Carrd</a>
-                </div>
             </div>
 
             <div class="output-block hidden" id="output-3">
                 <div class="output-header">
                     <h3>KIT SIGNUP FORM COPY</h3>
-                    <button class="copy-btn" data-target="output-3-content">Copy</button>
+                    <div class="output-header-actions">
+                        <a class="icon-btn kit-btn" href="https://kit.com/" target="_blank" rel="noopener" title="Go to Kit">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        </a>
+                        <button class="copy-btn" data-target="output-3-content">Copy</button>
+                    </div>
                 </div>
                 <pre id="output-3-content" class="output-content"></pre>
-                <div class="output-links">
-                    <a class="link-btn kit-btn" href="https://kit.com/" target="_blank" rel="noopener">Go to Kit</a>
-                </div>
             </div>
 
             <div class="output-block hidden" id="output-6">
