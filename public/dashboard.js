@@ -54,7 +54,7 @@ async function loadDashboard() {
                     </div>
                     <div class="idea-actions">
                         <button class="action-btn" onclick="openIdea('${idea.id}')">Open</button>
-                        <button class="action-btn danger" onclick="confirmDelete('${idea.id}', '${escapeHtml(idea.product_name || "this idea")}')">Delete</button>
+                        <button class="action-btn danger" onclick="confirmTrash('${idea.id}', '${escapeHtml(idea.product_name || "this idea")}')">Delete</button>
                     </div>
                 </div>
             `;
@@ -72,14 +72,93 @@ function openIdea(ideaId) {
     window.location.href = `/${user.id}/${ideaId}`;
 }
 
-async function confirmDelete(ideaId, name) {
-    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+async function confirmTrash(ideaId, name) {
+    if (!confirm(`Move "${name}" to trash?`)) return;
 
     try {
-        await deleteIdea(ideaId);
+        await trashIdea(ideaId);
         await loadDashboard();
     } catch (err) {
+        alert("Failed to trash: " + err.message);
+    }
+}
+
+async function confirmRestore(ideaId, name) {
+    try {
+        await restoreIdea(ideaId);
+        await loadTrash();
+    } catch (err) {
+        alert("Failed to restore: " + err.message);
+    }
+}
+
+async function confirmPermanentDelete(ideaId, name) {
+    if (!confirm(`Permanently delete "${name}"? This cannot be undone.`)) return;
+
+    try {
+        await deleteIdeaPermanently(ideaId);
+        await loadTrash();
+    } catch (err) {
         alert("Failed to delete: " + err.message);
+    }
+}
+
+let showingTrash = false;
+
+function toggleTrash() {
+    showingTrash = !showingTrash;
+    const btn = document.getElementById("trash-toggle-btn");
+    if (showingTrash) {
+        btn.innerHTML = '&larr; Back to Ideas';
+        loadTrash();
+    } else {
+        btn.innerHTML = '&#128465; Trash';
+        loadDashboard();
+    }
+}
+
+async function loadTrash() {
+    const loadingEl = document.getElementById("ideas-loading");
+    const emptyEl = document.getElementById("ideas-empty");
+    const gridEl = document.getElementById("ideas-grid");
+
+    loadingEl.classList.remove("hidden");
+    emptyEl.classList.add("hidden");
+    gridEl.innerHTML = "";
+
+    try {
+        const ideas = await getTrashedIdeas();
+        loadingEl.classList.add("hidden");
+
+        if (ideas.length === 0) {
+            emptyEl.classList.remove("hidden");
+            emptyEl.innerHTML = "<p>Trash is empty.</p>";
+            return;
+        }
+
+        gridEl.innerHTML = ideas.map((idea) => {
+            const updated = new Date(idea.updated_at).toLocaleDateString();
+            const domain = idea.domain === "None" ? "No domain" : idea.domain;
+
+            return `
+                <div class="idea-card trashed">
+                    <div class="idea-card-header">
+                        <h3 class="idea-name">${escapeHtml(idea.product_name || "Untitled")}</h3>
+                        <span class="idea-status trash">trash</span>
+                    </div>
+                    <p class="idea-domain">${escapeHtml(domain)}</p>
+                    <div class="idea-meta">
+                        <span>Deleted ${updated}</span>
+                    </div>
+                    <div class="idea-actions">
+                        <button class="action-btn" onclick="confirmRestore('${idea.id}', '${escapeHtml(idea.product_name || "this idea")}')">Restore</button>
+                        <button class="action-btn danger" onclick="confirmPermanentDelete('${idea.id}', '${escapeHtml(idea.product_name || "this idea")}')">Delete Forever</button>
+                    </div>
+                </div>
+            `;
+        }).join("");
+    } catch (err) {
+        loadingEl.textContent = "Failed to load trash: " + err.message;
     }
 }
 

@@ -19,7 +19,10 @@
         <div id="dashboard-container">
             <div class="dashboard-header">
                 <div class="idea-count" id="idea-count"></div>
-                <a href="/?new=1" class="action-btn primary">New Idea</a>
+                <div class="dashboard-header-actions">
+                    <button id="trash-toggle-btn" class="action-btn" onclick="toggleTrash()">&#128465; Trash</button>
+                    <a href="/?new=1" class="action-btn primary">New Idea</a>
+                </div>
             </div>
 
             <div id="ideas-loading" class="dashboard-loading">Loading your ideas...</div>

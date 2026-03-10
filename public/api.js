@@ -26,7 +26,20 @@ async function getIdeas() {
     const { data, error } = await sb
         .from("ideas")
         .select("*, idea_versions(count)")
+        .neq("status", "trash")
         .order("sort_order", { ascending: true, nullsFirst: false })
+        .order("updated_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return data;
+}
+
+async function getTrashedIdeas() {
+    const sb = getSupabase();
+    const { data, error } = await sb
+        .from("ideas")
+        .select("*, idea_versions(count)")
+        .eq("status", "trash")
         .order("updated_at", { ascending: false });
 
     if (error) throw new Error(error.message);
@@ -67,7 +80,29 @@ async function getIdeaVersions(ideaId) {
     return data;
 }
 
-async function deleteIdea(ideaId) {
+async function trashIdea(ideaId) {
+    const sb = getSupabase();
+    const { error } = await sb
+        .from("ideas")
+        .update({ status: "trash" })
+        .eq("id", ideaId);
+
+    if (error) throw new Error(error.message);
+    currentProfile = await fetchProfile();
+}
+
+async function restoreIdea(ideaId) {
+    const sb = getSupabase();
+    const { error } = await sb
+        .from("ideas")
+        .update({ status: "complete" })
+        .eq("id", ideaId);
+
+    if (error) throw new Error(error.message);
+    currentProfile = await fetchProfile();
+}
+
+async function deleteIdeaPermanently(ideaId) {
     const sb = getSupabase();
     const { error } = await sb
         .from("ideas")
@@ -75,8 +110,6 @@ async function deleteIdea(ideaId) {
         .eq("id", ideaId);
 
     if (error) throw new Error(error.message);
-
-    // Refresh profile to update idea_count
     currentProfile = await fetchProfile();
 }
 
