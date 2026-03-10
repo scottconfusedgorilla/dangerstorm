@@ -217,22 +217,22 @@ document.getElementById("download-all-btn").addEventListener("click", async () =
     URL.revokeObjectURL(url);
 });
 
-function addMessageStamp(div) {
+function addMessageStamp() {
     const stamp = document.createElement("div");
     stamp.className = "message-stamp";
     const now = new Date().toLocaleString();
     stamp.textContent = sessionIP
-        ? `${now} — IP: ${sessionIP}`
+        ? `Your IP: ${sessionIP} — ${now}`
         : now;
-    div.appendChild(stamp);
+    messagesEl.appendChild(stamp);
 }
 
 function addMessage(role, text) {
     const div = document.createElement("div");
     div.className = `message ${role}`;
     div.textContent = text;
-    if (role === "user") addMessageStamp(div);
     messagesEl.appendChild(div);
+    if (role === "user") addMessageStamp();
     autoScroll();
     return div;
 }
@@ -250,8 +250,8 @@ function addMessageWithAttachment(role, text, fileName) {
     textNode.textContent = text;
     div.appendChild(textNode);
 
-    if (role === "user") addMessageStamp(div);
     messagesEl.appendChild(div);
+    if (role === "user") addMessageStamp();
     autoScroll();
     return div;
 }

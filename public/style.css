@@ -1102,6 +1102,7 @@ header .tagline {
 .message-stamp {
     font-size: 0.65rem;
     color: var(--text-muted);
-    opacity: 0.6;
-    margin-top: 0.3rem;
+    opacity: 0.5;
+    text-align: center;
+    margin: 0.2rem 0 0.5rem;
 }
