@@ -44,16 +44,12 @@ header {
 
 .header-row {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
-    position: relative;
 }
 
 #auth-bar {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
+    flex-shrink: 0;
 }
 
 .auth-user {
@@ -1226,15 +1222,6 @@ h3.editable .inline-edit {
         display: none;
     }
 
-    #auth-bar {
-        position: static;
-        transform: none;
-        margin-left: auto;
-    }
-
-    .header-row {
-        justify-content: space-between;
-    }
 }
 
 /* Legal pages */
