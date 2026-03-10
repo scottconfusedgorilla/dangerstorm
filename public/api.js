@@ -56,6 +56,16 @@ async function updateIdeaOrder(ideaId, sortOrder) {
     if (error) throw new Error(error.message);
 }
 
+async function updateIdeaField(ideaId, field, value) {
+    const sb = getSupabase();
+    const { error } = await sb
+        .from("ideas")
+        .update({ [field]: value, updated_at: new Date().toISOString() })
+        .eq("id", ideaId);
+
+    if (error) throw new Error(error.message);
+}
+
 async function getIdea(ideaId) {
     const sb = getSupabase();
     const { data, error } = await sb

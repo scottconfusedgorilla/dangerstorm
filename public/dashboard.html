@@ -20,6 +20,7 @@
             <div class="dashboard-header">
                 <div class="idea-count" id="idea-count"></div>
                 <div class="dashboard-header-actions">
+                    <button id="trash-toggle-btn" class="action-btn trash-btn" onclick="toggleTrash()">&#128465; Crappy Ideas</button>
                     <a href="/?new=1" class="action-btn primary">New Idea</a>
                 </div>
             </div>
@@ -31,16 +32,6 @@
             </div>
             <div id="ideas-grid" class="ideas-grid"></div>
         </div>
-
-        <button id="trash-toggle-btn" class="trash-can-btn" onclick="toggleTrash()" title="Crappy Ideas">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
-                <path d="M10 11v6"/>
-                <path d="M14 11v6"/>
-                <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
-            </svg>
-        </button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>

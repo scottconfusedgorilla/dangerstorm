@@ -812,30 +812,9 @@ header .tagline {
     color: var(--text-muted);
 }
 
-.trash-can-btn {
-    position: fixed;
-    bottom: 32px;
-    right: 32px;
-    background: transparent;
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    color: var(--text-muted);
-    padding: 12px;
-    cursor: pointer;
-    transition: color 0.2s, border-color 0.2s;
-    opacity: 0.5;
-}
-
-.trash-can-btn:hover {
-    color: #EF4444;
+.trash-btn.active {
     border-color: #EF4444;
-    opacity: 1;
-}
-
-.trash-can-btn.active {
     color: #EF4444;
-    border-color: #EF4444;
-    opacity: 1;
 }
 
 .dashboard-empty.hidden {
@@ -959,6 +938,32 @@ header .tagline {
     display: flex;
     gap: 8px;
     align-items: center;
+}
+
+.editable {
+    cursor: pointer;
+    border-bottom: 1px dashed transparent;
+    transition: border-color 0.2s;
+}
+
+.editable:hover {
+    border-bottom-color: var(--text-muted);
+}
+
+.inline-edit {
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    color: var(--text);
+    font: inherit;
+    padding: 2px 6px;
+    width: 100%;
+    outline: none;
+}
+
+h3.editable .inline-edit {
+    font-size: inherit;
+    font-weight: inherit;
 }
 
 .idea-summary {

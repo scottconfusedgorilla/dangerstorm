@@ -49,10 +49,10 @@ async function loadDashboard() {
                 <div class="idea-card" data-id="${idea.id}" draggable="true">
                     <div class="idea-card-header">
                         <span class="drag-handle" title="Drag to reorder">⠿</span>
-                        <h3 class="idea-name">${escapeHtml(name)}</h3>
+                        <h3 class="idea-name editable" onclick="editField(this, '${idea.id}', 'product_name')" title="Click to edit">${escapeHtml(name)}</h3>
                         <span class="idea-status ${idea.status}">${idea.status}</span>
                     </div>
-                    <p class="idea-domain">${escapeHtml(domain)}</p>
+                    <p class="idea-domain editable" onclick="editField(this, '${idea.id}', 'domain')" title="Click to edit">${escapeHtml(domain)}</p>
                     ${summary ? `<p class="idea-summary">${escapeHtml(summary)}</p>` : ""}
                     <div class="idea-meta">
                         <span>${versionCount} version${versionCount !== 1 ? "s" : ""}</span>
@@ -123,8 +123,10 @@ function toggleTrash() {
     const btn = document.getElementById("trash-toggle-btn");
     btn.classList.toggle("active", showingTrash);
     if (showingTrash) {
+        btn.innerHTML = '&larr; Back to Ideas';
         loadTrash();
     } else {
+        btn.innerHTML = '&#128465; Crappy Ideas';
         loadDashboard();
     }
 }
@@ -182,6 +184,42 @@ function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Inline editing
+function editField(el, ideaId, field) {
+    if (el.querySelector("input")) return; // already editing
+
+    const current = el.textContent.trim();
+    const isNoData = current === "No domain" || current === "Untitled";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = isNoData ? "" : current;
+    input.className = "inline-edit";
+    input.placeholder = field === "domain" ? "example.com" : "Idea name";
+
+    el.textContent = "";
+    el.appendChild(input);
+    input.focus();
+    input.select();
+
+    async function save() {
+        const val = input.value.trim();
+        if (val && val !== current) {
+            try {
+                await updateIdeaField(ideaId, field, val);
+            } catch (err) {
+                console.warn("Failed to update:", err.message);
+            }
+        }
+        el.textContent = val || current;
+    }
+
+    input.addEventListener("blur", save);
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") input.blur();
+        if (e.key === "Escape") { input.value = current; input.blur(); }
+    });
 }
 
 // Drag and drop sorting

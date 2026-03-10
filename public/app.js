@@ -568,7 +568,7 @@ document.getElementById("save-idea-btn").addEventListener("click", async () => {
         currentIdeaId = result.ideaId;
         currentVersionNumber = result.versionNumber;
         updateIdeaUrl(getUser().id, result.ideaId);
-        showSaveStatus("Idea saved! Find it in your Dashboard.", "success");
+        showSaveStatus('Idea saved! Find it in your <a href="/dashboard" style="color:inherit;text-decoration:underline;">Dashboard</a>.', "success");
         // Refresh profile to get updated idea_count
         currentProfile = await fetchProfile();
     } catch (err) {
@@ -581,7 +581,7 @@ document.getElementById("save-idea-btn").addEventListener("click", async () => {
 
 function showSaveStatus(message, type) {
     const el = document.getElementById("save-status");
-    el.textContent = message;
+    el.innerHTML = message;
     el.className = `save-status ${type}`;
     setTimeout(() => el.classList.add("hidden"), 5000);
 }
