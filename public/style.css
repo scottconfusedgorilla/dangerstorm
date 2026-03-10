@@ -1098,3 +1098,11 @@ header .tagline {
 .footer-sep {
     margin: 0 0.5rem;
 }
+
+.session-info {
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    opacity: 0.5;
+    padding: 0.25rem 0 0;
+}

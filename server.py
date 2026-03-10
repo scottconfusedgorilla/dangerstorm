@@ -444,6 +444,15 @@ def generate_ppt():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/session-info")
+def session_info():
+    """Return the client's IP address for transparency display."""
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    if ip and "," in ip:
+        ip = ip.split(",")[0].strip()
+    return jsonify({"ip": ip or "unknown"})
+
+
 @app.route("/privacy")
 def privacy():
     return send_from_directory("public", "privacy.html")

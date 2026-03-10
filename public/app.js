@@ -620,6 +620,18 @@ function onAuthChange(user, profile) {
     // Could refresh UI elements based on auth state
 }
 
+// Show session info (IP + timestamp) for transparency
+fetch("/api/session-info")
+    .then((r) => r.json())
+    .then((info) => {
+        const el = document.getElementById("session-info");
+        if (el && info.ip) {
+            const now = new Date().toLocaleString();
+            el.textContent = `Your IP: ${info.ip} — Session started: ${now}`;
+        }
+    })
+    .catch(() => {});
+
 // Boot
 try { initSupabase(); } catch (e) { console.error("Supabase init error:", e); }
 
