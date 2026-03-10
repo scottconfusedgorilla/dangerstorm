@@ -409,6 +409,16 @@ def generate_ppt():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/privacy")
+def privacy():
+    return send_from_directory("public", "privacy.html")
+
+
+@app.route("/terms")
+def terms():
+    return send_from_directory("public", "terms.html")
+
+
 @app.route("/dashboard")
 def dashboard():
     return send_from_directory("public", "dashboard.html")
