@@ -136,6 +136,11 @@ header h1 {
     color: var(--text);
 }
 
+.header-bolt {
+    vertical-align: middle;
+    margin: 0 2px;
+}
+
 header .accent {
     color: var(--accent);
 }

@@ -2,6 +2,11 @@
 // DangerStorm — Supabase Auth
 // ============================================
 
+// Register service worker for PWA
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+}
+
 const SUPABASE_URL = "https://detfoqtvhrmbizzdzenb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRldGZvcXR2aHJtYml6emR6ZW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjc4MzksImV4cCI6MjA4ODY0MzgzOX0.Yfcr3PabrD2HtoH2B7Tzl6O9mONmAaG-Ww7rK9WZHRE";
 

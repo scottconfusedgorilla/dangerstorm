@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0F172A"/>
+  <rect x="8" y="8" width="496" height="496" rx="88" fill="none" stroke="#1E293B" stroke-width="4"/>
+  <!-- D -->
+  <text x="72" y="340" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="220" fill="#FFFFFF">D</text>
+  <!-- Lightning bolt -->
+  <polygon points="270,80 220,240 280,240 230,432 340,200 275,200 320,80" fill="#F97316"/>
+  <!-- S -->
+  <text x="330" y="340" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="220" fill="#FFFFFF">S</text>
+</svg>
