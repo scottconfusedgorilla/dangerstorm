@@ -16,6 +16,19 @@ const SESSION_TTL = 10 * 60 * 1000; // 10 minutes
 let conversationHistory = [];
 let isWaiting = false;
 let pendingFile = null; // { name, type, data } — data is base64 for images, text for text files
+let userHasScrolled = false;
+
+// Detect manual scroll: pause auto-scroll when user scrolls up
+window.addEventListener("scroll", () => {
+    const distFromBottom = document.body.scrollHeight - window.innerHeight - window.scrollY;
+    userHasScrolled = distFromBottom > 150;
+});
+
+function autoScroll() {
+    if (!userHasScrolled) {
+        autoScroll();
+    }
+}
 
 function saveSession() {
     // Don't save file attachments to localStorage (too large for images)
@@ -208,7 +221,7 @@ function addMessage(role, text) {
     div.className = `message ${role}`;
     div.textContent = text;
     messagesEl.appendChild(div);
-    window.scrollTo(0, document.body.scrollHeight);
+    autoScroll();
     return div;
 }
 
@@ -226,7 +239,7 @@ function addMessageWithAttachment(role, text, fileName) {
     div.appendChild(textNode);
 
     messagesEl.appendChild(div);
-    window.scrollTo(0, document.body.scrollHeight);
+    autoScroll();
     return div;
 }
 
@@ -236,7 +249,7 @@ function addTypingIndicator() {
     div.id = "typing-indicator";
     div.innerHTML = '<span class="typing-dots">Thinking</span>';
     messagesEl.appendChild(div);
-    window.scrollTo(0, document.body.scrollHeight);
+    autoScroll();
     return div;
 }
 
@@ -318,6 +331,7 @@ async function sendMessage() {
     const text = inputEl.value.trim();
     if ((!text && !pendingFile) || isWaiting) return;
 
+    userHasScrolled = false; // resume auto-scroll for new response
     const displayText = text || `[Attached: ${pendingFile.name}]`;
     const attachedFile = pendingFile;
 
@@ -396,7 +410,7 @@ async function sendMessage() {
                                 .replace(/===OUTPUT_\d_(?:START|END)===/g, "")
                                 .trim();
                             msgDiv.textContent = displayText;
-                            window.scrollTo(0, document.body.scrollHeight);
+                            autoScroll();
                         }
                         if (data.done) {
                             console.log("Stream complete:", data);
