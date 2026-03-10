@@ -510,7 +510,7 @@ let currentIdeaId = null;
 let currentVersionNumber = null;
 let currentSummary = ""; // one-sentence summary from OUTPUT_5
 
-document.getElementById("save-idea-btn").addEventListener("click", async () => {
+async function doSaveIdea(btn) {
     if (!requireAuth("save")) return;
 
     const limit = checkIdeaLimit();
@@ -521,22 +521,40 @@ document.getElementById("save-idea-btn").addEventListener("click", async () => {
         return;
     }
 
-    const btn = document.getElementById("save-idea-btn");
-    const outputs = {
-        output1: document.getElementById("output-1-content").textContent,
+    // Gather outputs if they exist
+    const outputEl1 = document.getElementById("output-1-content");
+    const hasOutputs = outputEl1 && outputEl1.textContent.trim();
+    const outputs = hasOutputs ? {
+        output1: outputEl1.textContent,
         output2: document.getElementById("output-2-content").textContent,
         output3: document.getElementById("output-3-content").textContent,
         output6: document.getElementById("output-6-content").textContent,
-    };
+    } : {};
 
-    // Try to extract domain and product name from the deck prompt
-    const deckText = outputs.output1;
-    const domainMatch = deckText.match(/domain[:\s]+([a-z0-9.-]+\.[a-z]{2,})/i);
-    const domain = domainMatch ? domainMatch[1] : "None";
-    const nameMatch = deckText.match(/product\s*name[:\s]+([^\n]+)/i);
-    const productName = nameMatch ? nameMatch[1].trim().replace(/\*+/g, "") : "Untitled Idea";
-    const tagline = currentSummary || "";
+    // Extract domain and product name from outputs or conversation
+    let domain = "None";
+    let productName = "Untitled Idea";
+    let tagline = currentSummary || "";
 
+    if (hasOutputs) {
+        const deckText = outputs.output1;
+        const domainMatch = deckText.match(/domain[:\s]+([a-z0-9.-]+\.[a-z]{2,})/i);
+        if (domainMatch) domain = domainMatch[1];
+        const nameMatch = deckText.match(/product\s*name[:\s]+([^\n]+)/i);
+        if (nameMatch) productName = nameMatch[1].trim().replace(/\*+/g, "");
+    } else {
+        // No outputs yet — use first user message as the idea name
+        const firstUserMsg = conversationHistory.find(m => m.role === "user");
+        if (firstUserMsg) {
+            const text = typeof firstUserMsg.content === "string"
+                ? firstUserMsg.content
+                : firstUserMsg.content.find(c => c.type === "text")?.text || "";
+            // Use first line, trimmed to 80 chars
+            productName = text.split("\n")[0].trim().substring(0, 80) || "Untitled Idea";
+        }
+    }
+
+    const origText = btn.textContent;
     btn.disabled = true;
     btn.textContent = "Saving...";
 
@@ -550,7 +568,6 @@ document.getElementById("save-idea-btn").addEventListener("click", async () => {
                 "Save new version", "Open existing"
             );
             if (action) {
-                // Force save as new version
                 const forced = await saveIdea(domain, productName, "", conversationHistory, outputs, true);
                 currentIdeaId = forced.ideaId;
                 currentVersionNumber = forced.versionNumber;
@@ -558,11 +575,10 @@ document.getElementById("save-idea-btn").addEventListener("click", async () => {
                 showSaveStatus("Saved as new version!", "success");
                 currentProfile = await fetchProfile();
             } else {
-                // Open existing idea via URL
                 window.location.href = `/${getUser().id}/${result.existingId}`;
             }
             btn.disabled = false;
-            btn.textContent = "Save Idea";
+            btn.textContent = origText;
             return;
         }
 
@@ -570,18 +586,29 @@ document.getElementById("save-idea-btn").addEventListener("click", async () => {
         currentVersionNumber = result.versionNumber;
         updateIdeaUrl(getUser().id, result.ideaId);
         showSaveStatus('Idea saved! Find it in your <a href="/dashboard" style="color:inherit;text-decoration:underline;">Dashboard</a>.', "success");
-        // Refresh profile to get updated idea_count
         currentProfile = await fetchProfile();
     } catch (err) {
         showSaveStatus("Failed to save: " + err.message, "error");
     } finally {
         btn.disabled = false;
-        btn.textContent = "Save Idea";
+        btn.textContent = origText;
     }
+}
+
+document.getElementById("save-idea-btn").addEventListener("click", function () {
+    doSaveIdea(this);
+});
+
+document.getElementById("chat-save-btn").addEventListener("click", function () {
+    if (conversationHistory.length === 0) return;
+    doSaveIdea(this);
 });
 
 function showSaveStatus(message, type) {
-    const el = document.getElementById("save-status");
+    // Show in the visible save-status element (outputs or chat)
+    const outputsEl = document.getElementById("save-status");
+    const chatEl = document.getElementById("chat-save-status");
+    const el = outputsContainer.classList.contains("hidden") ? chatEl : outputsEl;
     el.innerHTML = message;
     el.className = `save-status ${type}`;
     setTimeout(() => el.classList.add("hidden"), 5000);

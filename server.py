@@ -530,14 +530,23 @@ def save_idea():
                 "domain": domain,
             }), 409
 
+        # Determine status based on whether outputs are present
+        has_outputs = bool(outputs.get("output1"))
+        idea_status = "complete" if has_outputs else "draft"
+
         # Upsert idea
         if is_new:
+            # Bump sort_order of all existing ideas so new one lands at top (sort_order 0)
+            existing_ideas = sb.table("ideas").select("id, sort_order").eq("user_id", user_id).neq("status", "trash").execute()
+            for ei in existing_ideas.data:
+                sb.table("ideas").update({"sort_order": (ei.get("sort_order") or 0) + 1}).eq("id", ei["id"]).execute()
             idea_result = sb.table("ideas").insert({
                 "user_id": user_id,
                 "domain": domain,
                 "product_name": product_name,
                 "tagline": tagline,
-                "status": "complete",
+                "status": idea_status,
+                "sort_order": 0,
             }).execute()
             idea_id = idea_result.data[0]["id"]
         else:
@@ -545,7 +554,7 @@ def save_idea():
             sb.table("ideas").update({
                 "product_name": product_name,
                 "tagline": tagline,
-                "status": "complete",
+                "status": idea_status,
                 "updated_at": "now()",
             }).eq("id", idea_id).execute()
 

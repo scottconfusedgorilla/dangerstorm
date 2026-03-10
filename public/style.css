@@ -498,6 +498,7 @@ header .tagline {
 #chat-actions {
     display: flex;
     justify-content: flex-end;
+    gap: 8px;
     padding: 4px 0;
     flex-shrink: 0;
 }
@@ -514,6 +515,11 @@ header .tagline {
 }
 
 .chat-action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.chat-save-btn {
     border-color: var(--accent);
     color: var(--accent);
 }
