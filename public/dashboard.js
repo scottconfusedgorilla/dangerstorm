@@ -55,8 +55,8 @@ async function loadDashboard() {
                         <h3 class="idea-name">${escapeHtml(name)}</h3>
                         <span class="idea-status ${idea.status}">${idea.status}</span>
                     </div>
-                    ${summary ? `<p class="idea-summary">${escapeHtml(summary)}</p>` : ""}
                     <p class="idea-domain">${escapeHtml(domain)}</p>
+                    ${summary ? `<p class="idea-summary">${escapeHtml(summary)}</p>` : ""}
                     <div class="idea-meta">
                         <span>${versionCount} version${versionCount !== 1 ? "s" : ""}</span>
                         <span>Updated ${updated}</span>
