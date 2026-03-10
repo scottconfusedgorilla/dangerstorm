@@ -311,11 +311,16 @@ function openInClaude() {
     window.open("https://claude.ai/new?q=" + encodeURIComponent(prompt), "_blank");
 }
 
-function openMarketResearch() {
+function copyMarketResearch() {
     const deckPrompt = document.getElementById("output-1-content").textContent;
     if (!deckPrompt) return;
     const researchPrompt = `Based on the following product pitch deck prompt, conduct a thorough market research and business viability analysis. Cover:\n\n1. **Market Size** — TAM, SAM, SOM estimates with reasoning\n2. **Competitive Landscape** — Who are the closest competitors? What's the moat?\n3. **Revenue Projections** — Year 1-3 estimates based on the pricing model described\n4. **Key Risks** — What could kill this? Technical, market, regulatory risks\n5. **Go-to-Market Strategy** — How should this launch? First 90 days playbook\n6. **Verdict** — Is this worth building? Score it 1-10 and explain why.\n\nBe specific, use real comparable companies and data where possible. Be honest — if the idea has fatal flaws, say so.\n\n---\n\nHere is the pitch deck prompt:\n\n${deckPrompt}`;
-    window.open("https://claude.ai/new?q=" + encodeURIComponent(researchPrompt), "_blank");
+    navigator.clipboard.writeText(researchPrompt).then(() => {
+        const btn = document.querySelector(".research-btn");
+        const orig = btn.textContent;
+        btn.textContent = "\u2713";
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+    });
 }
 
 function openDomainSearch() {
