@@ -281,3 +281,50 @@ function checkIdeaLimit() {
     }
     return { allowed: true };
 }
+
+// ---- Custom Modal (replaces confirm/alert) ----
+function dsModal(message, buttons) {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById("ds-modal-overlay");
+        const msgEl = document.getElementById("ds-modal-message");
+        const actionsEl = document.getElementById("ds-modal-actions");
+
+        msgEl.textContent = message;
+        actionsEl.innerHTML = "";
+
+        buttons.forEach((btn) => {
+            const b = document.createElement("button");
+            b.textContent = btn.label;
+            b.className = `action-btn${btn.primary ? " primary" : ""}${btn.danger ? " danger" : ""}`;
+            b.addEventListener("click", () => {
+                overlay.classList.add("hidden");
+                resolve(btn.value);
+            });
+            actionsEl.appendChild(b);
+        });
+
+        overlay.classList.remove("hidden");
+
+        // Close on overlay click (outside modal)
+        overlay.addEventListener("click", function handler(e) {
+            if (e.target === overlay) {
+                overlay.classList.add("hidden");
+                overlay.removeEventListener("click", handler);
+                resolve(null);
+            }
+        });
+    });
+}
+
+function dsConfirm(message, okLabel = "OK", cancelLabel = "Cancel") {
+    return dsModal(message, [
+        { label: cancelLabel, value: false },
+        { label: okLabel, value: true, primary: true },
+    ]);
+}
+
+function dsAlert(message, label = "OK") {
+    return dsModal(message, [
+        { label, value: true, primary: true },
+    ]);
+}

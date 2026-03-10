@@ -79,13 +79,13 @@ function openIdea(ideaId) {
 }
 
 async function confirmTrash(ideaId, name) {
-    if (!confirm(`Move "${name}" to trash?`)) return;
+    if (!await dsConfirm(`Move "${name}" to trash?`, "Trash it")) return;
 
     try {
         await trashIdea(ideaId);
         await loadDashboard();
     } catch (err) {
-        alert("Failed to trash: " + err.message);
+        dsAlert("Failed to trash: " + err.message);
     }
 }
 
@@ -93,26 +93,27 @@ async function confirmRestore(ideaId, name) {
     try {
         const result = await restoreIdea(ideaId);
         if (result && result.conflict) {
-            const choice = confirm(
-                `The domain "${result.domain}" is now used by "${result.existingName}".\n\nRestore anyway? The domain will be renamed to "${result.domain}-restored".`
+            const choice = await dsConfirm(
+                `The domain "${result.domain}" is now used by "${result.existingName}".\n\nRestore anyway? The domain will be renamed to "${result.domain}-restored".`,
+                "Restore anyway"
             );
             if (!choice) return;
             await restoreIdea(ideaId, true);
         }
         await loadTrash();
     } catch (err) {
-        alert("Failed to restore: " + err.message);
+        dsAlert("Failed to restore: " + err.message);
     }
 }
 
 async function confirmPermanentDelete(ideaId, name) {
-    if (!confirm(`Permanently delete "${name}"? This cannot be undone.`)) return;
+    if (!await dsConfirm(`Permanently delete "${name}"? This cannot be undone.`, "Delete forever")) return;
 
     try {
         await deleteIdeaPermanently(ideaId);
         await loadTrash();
     } catch (err) {
-        alert("Failed to delete: " + err.message);
+        dsAlert("Failed to delete: " + err.message);
     }
 }
 

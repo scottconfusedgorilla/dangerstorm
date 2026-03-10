@@ -153,6 +153,50 @@ header .tagline {
 }
 
 /* Auth Modal */
+/* DangerStorm confirm/alert modal */
+.ds-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 16px;
+}
+
+.ds-modal {
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+}
+
+.ds-modal-message {
+    color: var(--text);
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-bottom: 24px;
+    white-space: pre-line;
+}
+
+.ds-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.ds-modal-actions .action-btn {
+    min-width: 100px;
+}
+
+/* Auth modal */
 .modal-overlay {
     position: fixed;
     top: 0;

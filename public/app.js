@@ -80,7 +80,7 @@ fileInput.addEventListener("change", async (e) => {
     const maxSize = isImage ? 20 * 1024 * 1024 : 1 * 1024 * 1024; // 20MB images, 1MB text
 
     if (file.size > maxSize) {
-        alert(`File too large. Max ${isImage ? "20MB" : "1MB"}.`);
+        dsAlert(`File too large. Max ${isImage ? "20MB" : "1MB"}.`);
         fileInput.value = "";
         return;
     }
@@ -545,8 +545,9 @@ document.getElementById("save-idea-btn").addEventListener("click", async () => {
 
         // Handle domain conflict
         if (result.conflict) {
-            const action = confirm(
-                `"${result.existingName}" already uses ${result.domain}.\n\nClick OK to save as a new version of that idea, or Cancel to open it instead.`
+            const action = await dsConfirm(
+                `"${result.existingName}" already uses ${result.domain}.\n\nSave as a new version of that idea, or open it instead?`,
+                "Save new version", "Open existing"
             );
             if (action) {
                 // Force save as new version
