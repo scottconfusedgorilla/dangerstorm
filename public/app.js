@@ -500,6 +500,8 @@ function restoreSession() {
             const displayText = parsed.conversationText || "Here are your outputs:";
             addMessage("assistant", displayText);
             showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output5, parsed.output6);
+        } else if (msg.role === "user" && text.startsWith("[attached image]")) {
+            addMessageWithAttachment("user", text.replace("[attached image]\n", ""), "image attachment");
         } else {
             addMessage(msg.role, text);
         }
@@ -618,6 +620,8 @@ async function loadSavedIdea(ideaId) {
                 if (msg.role === "assistant" && parsed.hasOutputs) {
                     addMessage("assistant", parsed.conversationText || "Here are your outputs:");
                     showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output5, parsed.output6);
+                } else if (msg.role === "user" && text.startsWith("[attached image]")) {
+                    addMessageWithAttachment("user", text.replace("[attached image]\n", ""), "image attachment");
                 } else {
                     addMessage(msg.role, text.replace(/===OUTPUT_\d_(?:START|END)===/g, "").trim());
                 }
