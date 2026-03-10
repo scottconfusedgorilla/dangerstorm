@@ -44,7 +44,7 @@ async function loadDashboard() {
         gridEl.innerHTML = ideas.map((idea) => {
             const versionCount = idea.idea_versions?.[0]?.count || 0;
             const updated = new Date(idea.updated_at).toLocaleDateString();
-            const domain = idea.domain === "None" ? "No domain" : idea.domain;
+            const domain = (idea.domain === "None" || idea.domain.startsWith("none-")) ? "No domain" : idea.domain;
             const name = cleanName(idea.product_name) || "Untitled";
             const summary = idea.tagline || "";
 
@@ -154,7 +154,7 @@ async function loadTrash() {
 
         gridEl.innerHTML = ideas.map((idea) => {
             const updated = new Date(idea.updated_at).toLocaleDateString();
-            const domain = idea.domain === "None" ? "No domain" : idea.domain;
+            const domain = (idea.domain === "None" || idea.domain.startsWith("none-")) ? "No domain" : idea.domain;
 
             return `
                 <div class="idea-card trashed">

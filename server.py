@@ -490,6 +490,10 @@ def save_idea():
         data = request.json
         user_id = request.user.id
         domain = data.get("domain", "None") or "None"
+        # Ensure domainless ideas get unique placeholder to avoid unique constraint collision
+        if domain == "None":
+            import uuid
+            domain = f"none-{uuid.uuid4().hex[:8]}"
         product_name = data.get("productName", "Untitled Idea")
         tagline = data.get("tagline", "")
         conversation = data.get("conversation", [])
