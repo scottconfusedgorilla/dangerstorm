@@ -18,10 +18,15 @@ async function loadDashboard() {
     const emptyEl = document.getElementById("ideas-empty");
     const gridEl = document.getElementById("ideas-grid");
 
+    // Reset state
+    loadingEl.classList.remove("hidden");
+    emptyEl.classList.add("hidden");
+    gridEl.innerHTML = "";
+
     if (profile) {
-        const max = profile.tier === "pro" ? 999 : 5;
+        const max = profile.tier === "pro" ? 999 : 99;
         countEl.textContent = `${profile.idea_count} of ${max} ideas used`;
-        if (profile.tier === "free" && profile.idea_count >= 3) {
+        if (profile.tier === "free" && profile.idea_count >= 90) {
             countEl.innerHTML += ' &mdash; <a href="/account" class="upgrade-link">Upgrade to Pro</a>';
         }
     }
@@ -39,12 +44,13 @@ async function loadDashboard() {
             const versionCount = idea.idea_versions?.[0]?.count || 0;
             const updated = new Date(idea.updated_at).toLocaleDateString();
             const domain = idea.domain === "None" ? "No domain" : idea.domain;
+            const name = cleanName(idea.product_name) || "Untitled";
 
             return `
                 <div class="idea-card" data-id="${idea.id}" draggable="true">
                     <div class="idea-card-header">
                         <span class="drag-handle" title="Drag to reorder">⠿</span>
-                        <h3 class="idea-name">${escapeHtml(idea.product_name || "Untitled")}</h3>
+                        <h3 class="idea-name">${escapeHtml(name)}</h3>
                         <span class="idea-status ${idea.status}">${idea.status}</span>
                     </div>
                     <p class="idea-domain">${escapeHtml(domain)}</p>
@@ -54,7 +60,7 @@ async function loadDashboard() {
                     </div>
                     <div class="idea-actions">
                         <button class="action-btn" onclick="openIdea('${idea.id}')">Open</button>
-                        <button class="action-btn danger" onclick="confirmTrash('${idea.id}', '${escapeHtml(idea.product_name || "this idea")}')">Delete</button>
+                        <button class="action-btn danger" onclick="confirmTrash('${idea.id}', '${escapeHtml(name)}')">Delete</button>
                     </div>
                 </div>
             `;
@@ -85,7 +91,14 @@ async function confirmTrash(ideaId, name) {
 
 async function confirmRestore(ideaId, name) {
     try {
-        await restoreIdea(ideaId);
+        const result = await restoreIdea(ideaId);
+        if (result && result.conflict) {
+            const choice = confirm(
+                `The domain "${result.domain}" is now used by "${result.existingName}".\n\nRestore anyway? The domain will be renamed to "${result.domain}-restored".`
+            );
+            if (!choice) return;
+            await restoreIdea(ideaId, true);
+        }
         await loadTrash();
     } catch (err) {
         alert("Failed to restore: " + err.message);
@@ -160,6 +173,10 @@ async function loadTrash() {
     } catch (err) {
         loadingEl.textContent = "Failed to load trash: " + err.message;
     }
+}
+
+function cleanName(text) {
+    return (text || "").replace(/\*+/g, "").trim();
 }
 
 function escapeHtml(text) {

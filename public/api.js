@@ -91,15 +91,24 @@ async function trashIdea(ideaId) {
     currentProfile = await fetchProfile();
 }
 
-async function restoreIdea(ideaId) {
-    const sb = getSupabase();
-    const { error } = await sb
-        .from("ideas")
-        .update({ status: "complete" })
-        .eq("id", ideaId);
+async function restoreIdea(ideaId, force = false) {
+    const token = await getAccessToken();
+    if (!token) throw new Error("Not authenticated");
 
-    if (error) throw new Error(error.message);
+    const response = await fetch("/api/restore-idea", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ideaId, force }),
+    });
+
+    const data = await response.json();
+    if (response.status === 409 && data.conflict) return data;
+    if (!response.ok) throw new Error(data.error || "Failed to restore idea");
     currentProfile = await fetchProfile();
+    return data;
 }
 
 async function deleteIdeaPermanently(ideaId) {

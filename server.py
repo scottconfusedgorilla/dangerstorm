@@ -98,11 +98,23 @@ Your voice: You talk like a senior product manager who's evaluated a thousand id
 
 ## WHEN YOU HAVE ENOUGH INFO (usually after 3-5 exchanges):
 
-Generate ONLY the pitch deck prompt (Output 1). The other outputs will be generated separately if the user requests them. Use these exact markers so the frontend can parse them:
+Generate ALL FOUR outputs in one response. Use these exact markers so the frontend can parse them:
 
 ===OUTPUT_1_START===
 [The complete deck prompt — see structure below]
 ===OUTPUT_1_END===
+
+===OUTPUT_2_START===
+[Carrd landing page copy — plain text, under 150 words. Headline (8 words max), subheadline, 3 benefit-focused bullets with **bold** lead word, social proof placeholder, CTA, footer. Carrd-compatible: **bold**, *italic*, [links](URL) only.]
+===OUTPUT_2_END===
+
+===OUTPUT_3_START===
+[Kit signup form copy — Form headline ("Be the first to know when [product] launches"), description, email placeholder, button text, privacy line.]
+===OUTPUT_3_END===
+
+===OUTPUT_6_START===
+[Claude Code build prompt — direct instructions for building an MVP. Specify tech stack, core features, user flow, UI direction. Under 30 lines. End with "Build this as a working MVP."]
+===OUTPUT_6_END===
 
 ## OUTPUT 1 — DECK PROMPT STRUCTURE:
 
@@ -130,8 +142,7 @@ The prompt should also specify:
 - Never show the question sequence as a list.
 - If the user says something off-topic, gently redirect: "Love the energy, but let's stay focused. What's the product?"
 - Keep your conversational responses SHORT — 1-3 sentences max before asking the next question.
-- CRITICAL: Generate ONLY Output 1 (the deck prompt). Outputs 2-6 are generated separately on demand. Do not generate them here.
-- The deck prompt should be detailed and complete — do not truncate or skip any slide.
+- CRITICAL: When ready, generate ALL FOUR outputs in one response. The deck prompt should be detailed and complete — do not truncate or skip any slide.
 
 ## IMPORTANT CONTEXT:
 You have ALREADY said your opener: "Alright, hit me. What's the product? Give me the elevator pitch in one or two sentences, and what's the domain?"
@@ -435,12 +446,15 @@ def save_idea():
 
         tier = profile.data["tier"]
         idea_count = profile.data["idea_count"]
-        max_ideas = 999 if tier == "pro" else 5
+        max_ideas = 999 if tier == "pro" else 99
 
-        # Check if this domain already has an idea
-        existing = sb.table("ideas").select("id, product_name").eq("user_id", user_id).eq("domain", domain).execute()
-        is_new = len(existing.data) == 0
+        # Check if this domain already has a non-trashed idea (skip for domainless ideas)
         force = data.get("force", False)
+        if domain and domain != "None":
+            existing = sb.table("ideas").select("id, product_name").eq("user_id", user_id).eq("domain", domain).neq("status", "trash").execute()
+        else:
+            existing = type('', (), {'data': []})()  # empty result
+        is_new = len(existing.data) == 0
 
         if is_new and idea_count >= max_ideas:
             return jsonify({"error": f"Idea limit reached ({max_ideas}). Upgrade to Pro for more."}), 403
@@ -492,6 +506,55 @@ def save_idea():
         })
     except Exception as e:
         print(f"[save-idea] Error: {type(e).__name__}: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/restore-idea", methods=["POST"])
+@require_auth
+def restore_idea():
+    try:
+        data = request.json
+        idea_id = data.get("ideaId")
+        force = data.get("force", False)
+
+        if not idea_id:
+            return jsonify({"error": "No idea ID provided"}), 400
+
+        sb = get_supabase()
+        user_id = request.user.id
+
+        # Get the trashed idea
+        idea = sb.table("ideas").select("id, domain, product_name").eq("id", idea_id).eq("user_id", user_id).eq("status", "trash").single().execute()
+        if not idea.data:
+            return jsonify({"error": "Idea not found in trash"}), 404
+
+        domain = idea.data["domain"]
+
+        # Check if domain is now used by an active idea
+        if domain and domain != "None":
+            existing = sb.table("ideas").select("id, product_name").eq("user_id", user_id).eq("domain", domain).neq("status", "trash").execute()
+            if existing.data and not force:
+                return jsonify({
+                    "conflict": True,
+                    "existingId": existing.data[0]["id"],
+                    "existingName": existing.data[0]["product_name"],
+                    "domain": domain,
+                }), 409
+
+        # Restore: if force and domain conflict, append "-restored" to domain
+        if force and domain and domain != "None":
+            existing = sb.table("ideas").select("id").eq("user_id", user_id).eq("domain", domain).neq("status", "trash").execute()
+            if existing.data:
+                sb.table("ideas").update({
+                    "status": "complete",
+                    "domain": domain + "-restored",
+                }).eq("id", idea_id).execute()
+                return jsonify({"restored": True, "newDomain": domain + "-restored"})
+
+        sb.table("ideas").update({"status": "complete"}).eq("id", idea_id).execute()
+        return jsonify({"restored": True})
+    except Exception as e:
+        print(f"[restore-idea] Error: {type(e).__name__}: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
 

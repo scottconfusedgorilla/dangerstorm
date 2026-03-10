@@ -300,87 +300,18 @@ function openDomainSearch() {
 
 function showOutputs(output1, output2, output3, output6) {
     document.getElementById("output-1-content").textContent = output1;
+    document.getElementById("output-2-content").textContent = output2 || "";
+    document.getElementById("output-3-content").textContent = output3 || "";
+    document.getElementById("output-6-content").textContent = output6 || "";
 
-    // If we only have output 1, show the "Generate Full Package" button and hide extras
-    const hasExtras = output2 || output6;
     const extrasBlocks = document.querySelectorAll("#output-2, #output-3, #output-6");
-    const generateExtrasBtn = document.getElementById("generate-extras-btn");
-
-    if (hasExtras) {
-        document.getElementById("output-2-content").textContent = output2;
-        document.getElementById("output-3-content").textContent = output3;
-        document.getElementById("output-6-content").textContent = output6 || "";
-        extrasBlocks.forEach((el) => el.classList.remove("hidden"));
-        if (generateExtrasBtn) generateExtrasBtn.classList.add("hidden");
-    } else {
-        extrasBlocks.forEach((el) => el.classList.add("hidden"));
-        if (generateExtrasBtn) generateExtrasBtn.classList.remove("hidden");
-    }
+    extrasBlocks.forEach((el) => {
+        const content = el.querySelector(".output-content");
+        el.classList.toggle("hidden", !content || !content.textContent);
+    });
 
     outputsContainer.classList.remove("hidden");
     outputsContainer.scrollIntoView({ behavior: "smooth" });
-}
-
-async function generateExtras() {
-    const deckPrompt = document.getElementById("output-1-content").textContent;
-    if (!deckPrompt) return;
-
-    const btn = document.getElementById("generate-extras-btn");
-    btn.disabled = true;
-    btn.textContent = "Generating...";
-
-    try {
-        const response = await fetch("/api/generate-extras", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ deckPrompt }),
-        });
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let fullText = "";
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop();
-
-            for (const line of lines) {
-                if (line.startsWith("data: ")) {
-                    try {
-                        const data = JSON.parse(line.slice(6));
-                        if (data.text) fullText += data.text;
-                    } catch (e) {}
-                }
-            }
-        }
-
-        // Parse the extras outputs
-        const parsed = parseOutputs("===OUTPUT_1_START===\nplaceholder\n===OUTPUT_1_END===\n" + fullText);
-        if (parsed.output2 || parsed.output6) {
-            showOutputs(
-                deckPrompt,
-                parsed.output2,
-                parsed.output3,
-                parsed.output6
-            );
-        } else {
-            btn.textContent = "Generation failed — try again";
-            btn.disabled = false;
-            return;
-        }
-    } catch (err) {
-        btn.textContent = "Connection error — try again";
-        btn.disabled = false;
-        return;
-    }
-
-    btn.textContent = "Generate Full Package";
-    btn.disabled = false;
 }
 
 async function sendMessage() {
@@ -569,7 +500,7 @@ document.getElementById("save-idea-btn").addEventListener("click", async () => {
     const domainMatch = deckText.match(/domain[:\s]+([a-z0-9.-]+\.[a-z]{2,})/i);
     const domain = domainMatch ? domainMatch[1] : "None";
     const nameMatch = deckText.match(/product\s*name[:\s]+([^\n]+)/i);
-    const productName = nameMatch ? nameMatch[1].trim() : "Untitled Idea";
+    const productName = nameMatch ? nameMatch[1].trim().replace(/\*+/g, "") : "Untitled Idea";
 
     btn.disabled = true;
     btn.textContent = "Saving...";
