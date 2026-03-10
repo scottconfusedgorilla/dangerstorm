@@ -122,11 +122,12 @@ function toggleTrash() {
     showingTrash = !showingTrash;
     const btn = document.getElementById("trash-toggle-btn");
     btn.classList.toggle("active", showingTrash);
+    const label = btn.querySelector(".trash-label");
     if (showingTrash) {
-        btn.innerHTML = '&larr; Back to Ideas';
+        if (label) label.textContent = "Back to Ideas";
         loadTrash();
     } else {
-        btn.innerHTML = '&#128465; Crappy Ideas';
+        if (label) label.textContent = "Crappy Ideas";
         loadDashboard();
     }
 }
@@ -198,10 +199,18 @@ function editField(el, ideaId, field) {
     input.className = "inline-edit";
     input.placeholder = field === "domain" ? "example.com" : "Idea name";
 
+    // Disable drag on the card while editing
+    const card = el.closest(".idea-card");
+    if (card) card.setAttribute("draggable", "false");
+
     el.textContent = "";
     el.appendChild(input);
     input.focus();
     input.select();
+
+    // Prevent drag events from stealing focus
+    input.addEventListener("mousedown", (e) => e.stopPropagation());
+    input.addEventListener("dragstart", (e) => e.preventDefault());
 
     async function save() {
         const val = input.value.trim();
@@ -213,6 +222,7 @@ function editField(el, ideaId, field) {
             }
         }
         el.textContent = val || current;
+        if (card) card.setAttribute("draggable", "true");
     }
 
     input.addEventListener("blur", save);

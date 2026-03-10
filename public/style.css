@@ -812,9 +812,41 @@ header .tagline {
     color: var(--text-muted);
 }
 
-.trash-btn.active {
-    border-color: #EF4444;
+.trash-can-btn {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: transparent;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-muted);
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    opacity: 0.5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.trash-can-btn:hover {
     color: #EF4444;
+    border-color: #EF4444;
+    opacity: 1;
+}
+
+.trash-can-btn.active {
+    color: #EF4444;
+    border-color: #EF4444;
+    opacity: 1;
+}
+
+.trash-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .dashboard-empty.hidden {
