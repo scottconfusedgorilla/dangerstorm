@@ -154,22 +154,35 @@ function updateAuthUI() {
     if (!authBar) return;
 
     if (currentUser) {
-        const name = currentProfile?.display_name || currentUser.email;
+        const email = currentUser.email;
         const tier = currentProfile?.tier || "free";
-        const tierBadge = tier === "pro" ? '<span class="tier-badge pro">PRO</span>' : '<span class="tier-badge pioneer">PIONEER</span>';
+        const tierLabel = tier === "pro" ? "Pro" : "Pioneer";
         authBar.innerHTML = `
             <div class="auth-user">
-                <div class="auth-user-top">
-                    ${tierBadge}
-                    <span class="auth-name">${name}</span>
-                </div>
-                <div class="auth-user-links">
-                    <a href="/dashboard" class="auth-link">Dashboard</a>
-                    <button id="sign-out-btn" class="auth-link-btn">Sign out</button>
+                <a href="/dashboard" class="auth-dashboard-btn" title="Dashboard">
+                    <svg class="header-bolt" width="10" height="14" viewBox="0 0 24 40" fill="currentColor"><polygon points="14,0 6,18 14,18 4,40 22,16 13,16 20,0"/></svg>
+                    Dashboard
+                </a>
+                <span class="auth-identity">${email} · ${tierLabel}</span>
+                <div class="auth-kebab-wrap">
+                    <button class="auth-kebab-btn" title="More">⋮</button>
+                    <div class="auth-kebab-menu hidden">
+                        <button id="sign-out-btn" class="auth-kebab-item">Sign out</button>
+                    </div>
                 </div>
             </div>
         `;
         document.getElementById("sign-out-btn").addEventListener("click", signOut);
+        const kebabBtn = authBar.querySelector(".auth-kebab-btn");
+        const kebabMenu = authBar.querySelector(".auth-kebab-menu");
+        kebabBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            kebabMenu.classList.toggle("hidden");
+        });
+        // Close menu on any outside click
+        if (window._kebabClose) document.removeEventListener("click", window._kebabClose);
+        window._kebabClose = () => kebabMenu.classList.add("hidden");
+        document.addEventListener("click", window._kebabClose);
     } else {
         authBar.innerHTML = `
             <button id="sign-in-btn" class="auth-link-btn">Sign in</button>

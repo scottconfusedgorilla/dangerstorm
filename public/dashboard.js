@@ -81,12 +81,78 @@ function openIdea(ideaId) {
 async function confirmTrash(ideaId, name) {
     if (!await dsConfirm(`Move "${name}" to trash?`, "Trash it")) return;
 
+    // Animate the card crumpling and flying to the trash can
+    const card = document.querySelector(`.idea-card[data-id="${ideaId}"]`);
+    if (card) await animateTrash(card);
+
     try {
         await trashIdea(ideaId);
         await loadDashboard();
     } catch (err) {
         dsAlert("Failed to trash: " + err.message);
     }
+}
+
+function animateTrash(card) {
+    return new Promise((resolve) => {
+        const rect = card.getBoundingClientRect();
+        const trashBtn = document.getElementById("trash-toggle-btn");
+        const trashRect = trashBtn.getBoundingClientRect();
+        const trashX = trashRect.left + trashRect.width / 2;
+        const trashY = trashRect.top + trashRect.height / 2;
+        const startX = rect.left + rect.width / 2;
+        const startY = rect.top + rect.height / 2;
+
+        // Create a flying clone
+        const clone = card.cloneNode(true);
+        clone.style.cssText = `
+            position: fixed;
+            left: ${rect.left}px;
+            top: ${rect.top}px;
+            width: ${rect.width}px;
+            height: ${rect.height}px;
+            margin: 0;
+            z-index: 9999;
+            pointer-events: none;
+            transition: all 0.6s cubic-bezier(0.5, 0, 0.7, 1);
+            transform-origin: center center;
+        `;
+        document.body.appendChild(clone);
+
+        // Hide the original
+        card.style.opacity = "0";
+        card.style.height = card.offsetHeight + "px";
+        card.style.transition = "height 0.4s ease 0.2s, margin 0.4s ease 0.2s, padding 0.4s ease 0.2s";
+
+        // Trigger the animation on next frame
+        requestAnimationFrame(() => {
+            const dx = trashX - startX;
+            const dy = trashY - startY;
+            clone.style.transform = `translate(${dx}px, ${dy}px) scale(0.05) rotate(720deg)`;
+            clone.style.opacity = "0";
+            clone.style.borderRadius = "50%";
+
+            // Collapse the original's space
+            card.style.height = "0px";
+            card.style.margin = "0";
+            card.style.padding = "0";
+            card.style.overflow = "hidden";
+
+            // Briefly flash the trash can
+            setTimeout(() => {
+                trashBtn.style.transition = "transform 0.15s ease";
+                trashBtn.style.transform = "scale(1.2)";
+                setTimeout(() => {
+                    trashBtn.style.transform = "";
+                }, 150);
+            }, 500);
+        });
+
+        setTimeout(() => {
+            clone.remove();
+            resolve();
+        }, 700);
+    });
 }
 
 async function confirmRestore(ideaId, name) {
