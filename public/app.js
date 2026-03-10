@@ -281,6 +281,9 @@ function parseOutputs(text) {
     const output3Match = text.match(
         /===OUTPUT_3_START===([\s\S]*?)===OUTPUT_3_END===/
     );
+    const output5Match = text.match(
+        /===OUTPUT_5_START===([\s\S]*?)===OUTPUT_5_END===/
+    );
     const output6Match = text.match(
         /===OUTPUT_6_START===([\s\S]*?)===OUTPUT_6_END===/
     );
@@ -291,6 +294,7 @@ function parseOutputs(text) {
             output1: output1Match[1].trim(),
             output2: output2Match ? output2Match[1].trim() : "",
             output3: output3Match ? output3Match[1].trim() : "",
+            output5: output5Match ? output5Match[1].trim() : "",
             output6: output6Match ? output6Match[1].trim() : "",
             conversationText: text
                 .replace(/===OUTPUT_\d_START===[\s\S]*?===OUTPUT_\d_END===/g, "")
@@ -307,12 +311,11 @@ function openInClaude() {
     window.open("https://claude.ai/new?q=" + encodeURIComponent(prompt), "_blank");
 }
 
-function openInCopilot() {
-    const prompt = document.getElementById("output-1-content").textContent;
-    if (!prompt) return;
-    navigator.clipboard.writeText(prompt).then(() => {
-        window.open("https://copilot.microsoft.com/", "_blank");
-    });
+function openMarketResearch() {
+    const deckPrompt = document.getElementById("output-1-content").textContent;
+    if (!deckPrompt) return;
+    const researchPrompt = `Based on the following product pitch deck prompt, conduct a thorough market research and business viability analysis. Cover:\n\n1. **Market Size** — TAM, SAM, SOM estimates with reasoning\n2. **Competitive Landscape** — Who are the closest competitors? What's the moat?\n3. **Revenue Projections** — Year 1-3 estimates based on the pricing model described\n4. **Key Risks** — What could kill this? Technical, market, regulatory risks\n5. **Go-to-Market Strategy** — How should this launch? First 90 days playbook\n6. **Verdict** — Is this worth building? Score it 1-10 and explain why.\n\nBe specific, use real comparable companies and data where possible. Be honest — if the idea has fatal flaws, say so.\n\n---\n\nHere is the pitch deck prompt:\n\n${deckPrompt}`;
+    window.open("https://claude.ai/new?q=" + encodeURIComponent(researchPrompt), "_blank");
 }
 
 function openDomainSearch() {
@@ -324,11 +327,12 @@ function openDomainSearch() {
     window.open("https://www.godaddy.com/en-ca/domainsearch/find?domainToCheck=" + encodeURIComponent(domain), "_blank");
 }
 
-function showOutputs(output1, output2, output3, output6) {
+function showOutputs(output1, output2, output3, output5, output6) {
     document.getElementById("output-1-content").textContent = output1;
     document.getElementById("output-2-content").textContent = output2 || "";
     document.getElementById("output-3-content").textContent = output3 || "";
     document.getElementById("output-6-content").textContent = output6 || "";
+    currentSummary = output5 || "";
 
     const extrasBlocks = document.querySelectorAll("#output-2, #output-3, #output-6");
     extrasBlocks.forEach((el) => {
@@ -447,7 +451,7 @@ async function sendMessage() {
         if (parsed.hasOutputs) {
             // Update message to show only conversational text
             msgDiv.textContent = parsed.conversationText || "Here are your outputs:";
-            showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output6);
+            showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output5, parsed.output6);
         }
     } catch (err) {
         removeTypingIndicator();
@@ -490,7 +494,7 @@ function restoreSession() {
         if (msg.role === "assistant" && parsed.hasOutputs) {
             const displayText = parsed.conversationText || "Here are your outputs:";
             addMessage("assistant", displayText);
-            showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output6);
+            showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output5, parsed.output6);
         } else {
             addMessage(msg.role, text);
         }
@@ -502,6 +506,7 @@ function restoreSession() {
 // ---- Save Idea ----
 let currentIdeaId = null;
 let currentVersionNumber = null;
+let currentSummary = ""; // one-sentence summary from OUTPUT_5
 
 document.getElementById("save-idea-btn").addEventListener("click", async () => {
     if (!requireAuth("save")) return;
@@ -526,8 +531,12 @@ document.getElementById("save-idea-btn").addEventListener("click", async () => {
     const deckText = outputs.output1;
     const domainMatch = deckText.match(/domain[:\s]+([a-z0-9.-]+\.[a-z]{2,})/i);
     const domain = domainMatch ? domainMatch[1] : "None";
-    const nameMatch = deckText.match(/product\s*name[:\s]+([^\n]+)/i);
-    const productName = nameMatch ? nameMatch[1].trim().replace(/\*+/g, "") : "Untitled Idea";
+    // Use AI-generated summary (OUTPUT_5) as label, fall back to regex extraction
+    let productName = currentSummary || "";
+    if (!productName) {
+        const nameMatch = deckText.match(/product\s*name[:\s]+([^\n]+)/i);
+        productName = nameMatch ? nameMatch[1].trim().replace(/\*+/g, "") : "Untitled Idea";
+    }
 
     btn.disabled = true;
     btn.textContent = "Saving...";
@@ -606,7 +615,7 @@ async function loadSavedIdea(ideaId) {
                 const parsed = parseOutputs(text);
                 if (msg.role === "assistant" && parsed.hasOutputs) {
                     addMessage("assistant", parsed.conversationText || "Here are your outputs:");
-                    showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output6);
+                    showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output5, parsed.output6);
                 } else {
                     addMessage(msg.role, text.replace(/===OUTPUT_\d_(?:START|END)===/g, "").trim());
                 }
@@ -618,7 +627,7 @@ async function loadSavedIdea(ideaId) {
         // Restore outputs if saved separately
         if (latest.outputs) {
             const o = latest.outputs;
-            if (o.output1) showOutputs(o.output1, o.output2 || "", o.output3 || "", o.output6 || "");
+            if (o.output1) showOutputs(o.output1, o.output2 || "", o.output3 || "", o.output5 || "", o.output6 || "");
         }
 
         inputEl.placeholder = "Tell me what to change...";

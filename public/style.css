@@ -711,7 +711,7 @@ header .tagline {
 .icon-btn:hover { opacity: 0.75; }
 
 .icon-btn.claude-btn { background: #D97706; color: #fff; }
-.icon-btn.copilot-btn { background: #7C3AED; color: #fff; }
+.icon-btn.research-btn { background: #22C55E; color: #fff; font-weight: 700; font-size: 0.7rem; }
 .icon-btn.godaddy-btn { background: #00A4A6; color: #fff; }
 .icon-btn.carrd-btn { background: #4F46E5; color: #fff; }
 .icon-btn.kit-btn { background: #FB6970; color: #fff; }
