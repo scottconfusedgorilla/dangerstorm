@@ -1,0 +1,21 @@
+{
+  "name": "dangerstorm",
+  "version": "1.0.0",
+  "description": "One idea. One domain. One deck.",
+  "private": true,
+  "scripts": {
+    "cap:sync": "npx cap sync",
+    "cap:ios": "npx cap open ios",
+    "cap:android": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6",
+    "@capacitor/ios": "^6",
+    "@capacitor/android": "^6",
+    "@capacitor/status-bar": "^6",
+    "@capacitor/splash-screen": "^6"
+  }
+}
