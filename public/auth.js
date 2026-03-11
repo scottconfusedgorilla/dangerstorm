@@ -170,8 +170,9 @@ function updateAuthUI() {
                     <div class="auth-kebab-menu hidden">
                         <a href="/account" class="auth-kebab-item">Account</a>
                         <a href="mailto:codewrangler@dangerstorm.net" class="auth-kebab-item">Feedback</a>
+                        <a href="https://bsky.app/profile/dangerstorm.bsky.social" target="_blank" rel="noopener" class="auth-kebab-item">BlueSky</a>
                         <button id="sign-out-btn" class="auth-kebab-item">Sign out</button>
-                        <span class="auth-kebab-item build-label">build 064</span>
+                        <span class="auth-kebab-item build-label">build 065</span>
                     </div>
                 </div>
             </div>

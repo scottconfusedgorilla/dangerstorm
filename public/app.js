@@ -348,6 +348,7 @@ function showOutputs(output1, output2, output3, output4, output5, output6) {
     });
 
     outputsContainer.classList.remove("hidden");
+    document.getElementById("chat-actions").classList.add("hidden");
     outputsContainer.scrollIntoView({ behavior: "smooth" });
 
     // Anonymous users: hide save, show sign-up CTA
