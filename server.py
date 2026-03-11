@@ -129,7 +129,7 @@ Your voice: You talk like a senior product manager who's evaluated a thousand id
 
 ## WHEN YOU HAVE ENOUGH INFO (usually after 3-5 exchanges):
 
-Generate ALL FIVE outputs in one response. Use these exact markers so the frontend can parse them:
+Generate ALL SIX outputs in one response. Use these exact markers so the frontend can parse them:
 
 ===OUTPUT_1_START===
 [The complete deck prompt — see structure below]
@@ -142,6 +142,10 @@ Generate ALL FIVE outputs in one response. Use these exact markers so the fronte
 ===OUTPUT_3_START===
 [Kit signup form copy — Form headline ("Be the first to know when [product] launches"), description, email placeholder, button text, privacy line.]
 ===OUTPUT_3_END===
+
+===OUTPUT_4_START===
+[One-paragraph introductory pitch — 3-5 sentences that you could read aloud to introduce this product to an investor or audience. Open with the problem, pivot to the solution, land on why it matters. Confident, polished, no jargon. Under 75 words.]
+===OUTPUT_4_END===
 
 ===OUTPUT_5_START===
 [One sentence summarizing the product idea, under 15 words. This is used as the saved idea label. Example: "AI photo dating tool for scanned family archives". Do NOT include the domain or product name — describe what it DOES.]
@@ -367,6 +371,8 @@ EXTRAS_SYSTEM_PROMPT = """You are DangerStorm's output generator. Given a pitch 
 OUTPUT 2 — CARRD COPY: Headline (8 words max), subheadline, 3 benefit-focused bullets with **bold** lead word, social proof placeholder, CTA, footer. Carrd-compatible: **bold**, *italic*, [links](URL) only.
 
 OUTPUT 3 — KIT FORM COPY: Form headline, description, email placeholder, button text, privacy line.
+
+OUTPUT 4 — INTRO PITCH: One paragraph (3-5 sentences, under 75 words). Problem → solution → why it matters. Investor-ready, read-aloud quality.
 
 OUTPUT 6 — BUILD PROMPT: Project description, tech stack, 3-5 MVP features, user flow, UI direction, data model if needed. Practical and buildable.
 

@@ -186,12 +186,14 @@ document.getElementById("download-all-btn").addEventListener("click", async () =
     const output1 = document.getElementById("output-1-content").textContent;
     const output2 = document.getElementById("output-2-content").textContent;
     const output3 = document.getElementById("output-3-content").textContent;
+    const output4 = document.getElementById("output-4-content").textContent;
     const output6 = document.getElementById("output-6-content").textContent;
 
     if (output1) zip.file("01-pitch-deck-prompt.txt", output1);
     if (output2) zip.file("02-carrd-landing-page-copy.txt", output2);
     if (output3) zip.file("03-kit-signup-form-copy.txt", output3);
-    if (output6) zip.file("04-claude-code-build-prompt.md", output6);
+    if (output4) zip.file("04-intro-pitch.txt", output4);
+    if (output6) zip.file("05-claude-code-build-prompt.md", output6);
 
     // Include conversation history
     if (conversationHistory.length > 0) {
@@ -281,6 +283,9 @@ function parseOutputs(text) {
     const output3Match = text.match(
         /===OUTPUT_3_START===([\s\S]*?)===OUTPUT_3_END===/
     );
+    const output4Match = text.match(
+        /===OUTPUT_4_START===([\s\S]*?)===OUTPUT_4_END===/
+    );
     const output5Match = text.match(
         /===OUTPUT_5_START===([\s\S]*?)===OUTPUT_5_END===/
     );
@@ -294,6 +299,7 @@ function parseOutputs(text) {
             output1: output1Match[1].trim(),
             output2: output2Match ? output2Match[1].trim() : "",
             output3: output3Match ? output3Match[1].trim() : "",
+            output4: output4Match ? output4Match[1].trim() : "",
             output5: output5Match ? output5Match[1].trim() : "",
             output6: output6Match ? output6Match[1].trim() : "",
             conversationText: text
@@ -327,14 +333,15 @@ function openDomainSearch() {
     window.open("https://www.godaddy.com/en-ca/domainsearch/find?domainToCheck=" + encodeURIComponent(domain), "_blank");
 }
 
-function showOutputs(output1, output2, output3, output5, output6) {
+function showOutputs(output1, output2, output3, output4, output5, output6) {
     document.getElementById("output-1-content").textContent = output1;
     document.getElementById("output-2-content").textContent = output2 || "";
     document.getElementById("output-3-content").textContent = output3 || "";
+    document.getElementById("output-4-content").textContent = output4 || "";
     document.getElementById("output-6-content").textContent = output6 || "";
     currentSummary = output5 || "";
 
-    const extrasBlocks = document.querySelectorAll("#output-2, #output-3, #output-6");
+    const extrasBlocks = document.querySelectorAll("#output-2, #output-3, #output-4, #output-6");
     extrasBlocks.forEach((el) => {
         const content = el.querySelector(".output-content");
         el.classList.toggle("hidden", !content || !content.textContent);
@@ -479,7 +486,7 @@ async function sendMessage() {
         if (parsed.hasOutputs) {
             // Update message to show only conversational text
             msgDiv.textContent = parsed.conversationText || "Here are your outputs:";
-            showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output5, parsed.output6);
+            showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output4, parsed.output5, parsed.output6);
         }
     } catch (err) {
         removeTypingIndicator();
@@ -522,7 +529,7 @@ function restoreSession() {
         if (msg.role === "assistant" && parsed.hasOutputs) {
             const displayText = parsed.conversationText || "Here are your outputs:";
             addMessage("assistant", displayText);
-            showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output5, parsed.output6);
+            showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output4, parsed.output5, parsed.output6);
         } else if (msg.role === "user" && text.startsWith("[attached image]")) {
             addMessageWithAttachment("user", text.replace("[attached image]\n", ""), "image attachment");
         } else {
@@ -556,6 +563,7 @@ async function doSaveIdea(btn) {
         output1: outputEl1.textContent,
         output2: document.getElementById("output-2-content").textContent,
         output3: document.getElementById("output-3-content").textContent,
+        output4: document.getElementById("output-4-content").textContent,
         output6: document.getElementById("output-6-content").textContent,
     } : {};
 
@@ -680,7 +688,7 @@ async function loadSavedIdea(ideaId) {
                 const parsed = parseOutputs(text);
                 if (msg.role === "assistant" && parsed.hasOutputs) {
                     addMessage("assistant", parsed.conversationText || "Here are your outputs:");
-                    showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output5, parsed.output6);
+                    showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output4, parsed.output5, parsed.output6);
                 } else if (msg.role === "user" && text.startsWith("[attached image]")) {
                     addMessageWithAttachment("user", text.replace("[attached image]\n", ""), "image attachment");
                 } else {
@@ -694,7 +702,7 @@ async function loadSavedIdea(ideaId) {
         // Restore outputs if saved separately
         if (latest.outputs) {
             const o = latest.outputs;
-            if (o.output1) showOutputs(o.output1, o.output2 || "", o.output3 || "", o.output5 || "", o.output6 || "");
+            if (o.output1) showOutputs(o.output1, o.output2 || "", o.output3 || "", o.output4 || "", o.output5 || "", o.output6 || "");
         }
 
         inputEl.placeholder = "Tell me what to change...";
