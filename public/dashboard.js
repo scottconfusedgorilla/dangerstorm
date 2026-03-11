@@ -64,7 +64,8 @@ async function loadDashboard() {
                 : "/account";
             const folderTarget = filesUrl ? ' target="_blank" rel="noopener"' : '';
             const folderTitle = filesUrl ? "Open files folder" : "Set up your Junk Drawer folder";
-            const filesLink = `<a href="${folderHref}"${folderTarget} class="idea-files-link" title="${folderTitle}">&#128193;</a>`;
+            const folderIcon = `<svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 2.5V11.5C1.5 12.05 1.95 12.5 2.5 12.5H13.5C14.05 12.5 14.5 12.05 14.5 11.5V4.5C14.5 3.95 14.05 3.5 13.5 3.5H8L6.5 1.5H2.5C1.95 1.5 1.5 1.95 1.5 2.5Z"/></svg>`;
+            const filesLink = `<a href="${folderHref}"${folderTarget} class="idea-files-link" title="${folderTitle}">${folderIcon}</a>`;
 
             return `
                 <div class="idea-card" data-id="${idea.id}" draggable="true">

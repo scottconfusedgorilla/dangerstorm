@@ -1237,10 +1237,11 @@ h3.editable .inline-edit {
 
 .idea-files-link {
     text-decoration: none;
-    font-size: 1.25rem;
     color: var(--accent);
     opacity: 0.7;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
 }
 
 .idea-files-link:hover {
