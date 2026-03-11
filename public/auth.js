@@ -163,13 +163,14 @@ function updateAuthUI() {
                     <svg class="header-bolt" width="12" height="16" viewBox="0 0 24 40" fill="currentColor"><polygon points="14,0 6,18 14,18 4,40 22,16 13,16 20,0"/></svg>
                     Dashboard
                 </a>
-                <span class="auth-identity">${email} · ${tierLabel}</span>
+                <a href="/account" class="auth-identity" title="Account">${email} · ${tierLabel}</a>
                 <div class="auth-kebab-wrap">
                     <button class="auth-kebab-btn" title="More">⋮</button>
                     <div class="auth-kebab-menu hidden">
                         <a href="/account" class="auth-kebab-item">Account</a>
+                        <a href="mailto:codewrangler@dangerstorm.net" class="auth-kebab-item">Feedback</a>
                         <button id="sign-out-btn" class="auth-kebab-item">Sign out</button>
-                        <span class="auth-kebab-item build-label">build 055</span>
+                        <span class="auth-kebab-item build-label">build 056</span>
                     </div>
                 </div>
             </div>

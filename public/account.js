@@ -44,6 +44,10 @@ function renderAccount(user, profile) {
                 <span>Free forever &mdash; ${ideaCount} of ${max} ideas used</span>
             </div>
             <p class="text-muted" style="margin-top:8px;">You're an early adopter. Enjoy Pro-level access for life.</p>
+            <div class="coming-soon-card">
+                <h3>Pro &mdash; $ Coming</h3>
+                <p class="text-muted">Pro subscriptions are on the way. As a Pioneer, you'll keep full access free forever&mdash;no action needed.</p>
+            </div>
         `;
     } else {
         tierSection.innerHTML = `

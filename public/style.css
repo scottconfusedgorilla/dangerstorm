@@ -87,6 +87,11 @@ header {
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 280px;
+    text-decoration: none;
+}
+
+.auth-identity:hover {
+    color: var(--text);
 }
 
 .auth-kebab-wrap {
@@ -1206,6 +1211,73 @@ h3.editable .inline-edit {
     margin-top: 16px;
     padding-top: 16px;
     border-top: 1px solid var(--border);
+}
+
+.coming-soon-card {
+    background: rgba(249, 115, 22, 0.05);
+    border: 1px dashed rgba(249, 115, 22, 0.3);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 12px;
+}
+
+.coming-soon-card h3 {
+    font-size: 1rem;
+    margin-bottom: 4px;
+    color: var(--accent);
+}
+
+.contact-card {
+    margin-top: 24px;
+}
+
+.contact-list {
+    margin-top: 16px;
+}
+
+.contact-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.contact-row:last-child {
+    border-bottom: none;
+}
+
+.contact-label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.contact-row a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+
+.contact-row a:hover {
+    text-decoration: underline;
+}
+
+.contact-links {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 16px;
+}
+
+.contact-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.8rem;
+}
+
+.contact-links a:hover {
+    color: var(--text);
 }
 
 /* Mobile */
