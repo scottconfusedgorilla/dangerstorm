@@ -12,7 +12,7 @@ async function onAuthChange(user, profile) {
 }
 
 async function loadDashboard() {
-    const profile = getProfile();
+    const profile = await fetchProfile() || getProfile();
     const countEl = document.getElementById("idea-count");
     const loadingEl = document.getElementById("ideas-loading");
     const emptyEl = document.getElementById("ideas-empty");
