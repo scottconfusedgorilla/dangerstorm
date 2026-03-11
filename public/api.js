@@ -151,6 +151,28 @@ async function deleteIdeaPermanently(ideaId) {
     currentProfile = await fetchProfile();
 }
 
+async function deleteAllData() {
+    const sb = getSupabase();
+    const user = getUser();
+    if (!user) throw new Error("Not authenticated");
+
+    // Delete all ideas (cascades to idea_versions)
+    const { error } = await sb
+        .from("ideas")
+        .delete()
+        .eq("user_id", user.id);
+
+    if (error) throw new Error(error.message);
+
+    // Reset profile fields
+    await sb.from("profiles").update({
+        files_url: null,
+        idea_count: 0,
+    }).eq("id", user.id);
+
+    currentProfile = await fetchProfile();
+}
+
 async function uploadPpt(ideaId, versionNumber, pptBlob) {
     const sb = getSupabase();
     const user = getUser();

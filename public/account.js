@@ -106,6 +106,29 @@ document.getElementById("sign-out-account-btn").addEventListener("click", async 
     window.location.href = "/";
 });
 
+document.getElementById("delete-all-btn").addEventListener("click", async () => {
+    const first = confirm("This will permanently delete ALL your ideas and data. This cannot be undone.\n\nAre you sure?");
+    if (!first) return;
+
+    const second = prompt('Type "DELETE" to confirm:');
+    if (second !== "DELETE") return;
+
+    const btn = document.getElementById("delete-all-btn");
+    btn.disabled = true;
+    btn.textContent = "Deleting...";
+
+    try {
+        await deleteAllData();
+        showMessage("All data deleted.", "success");
+        btn.textContent = "Done";
+        setTimeout(() => { window.location.href = "/"; }, 2000);
+    } catch (err) {
+        showMessage("Failed to delete: " + err.message, "error");
+        btn.disabled = false;
+        btn.textContent = "Delete All My Data";
+    }
+});
+
 function showMessage(text, type) {
     const el = document.getElementById("account-message");
     el.textContent = text;

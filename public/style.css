@@ -1380,6 +1380,14 @@ h3.editable .inline-edit {
     color: var(--accent);
 }
 
+.danger-zone-card {
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.danger-zone-card h2 {
+    color: #EF4444;
+}
+
 .contact-card {
     margin-top: 24px;
 }
