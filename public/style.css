@@ -1187,6 +1187,10 @@ h3.editable .inline-edit {
     gap: 8px;
 }
 
+.idea-actions .action-btn.danger {
+    margin-left: auto;
+}
+
 .action-btn.danger {
     border-color: #EF4444;
     color: #EF4444;
