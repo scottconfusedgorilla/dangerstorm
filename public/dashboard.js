@@ -65,7 +65,7 @@ async function loadDashboard() {
                     </div>
                     <div class="idea-actions">
                         <button class="action-btn" onclick="openIdea('${idea.id}')">Open</button>
-                        <button class="action-btn danger" onclick="confirmTrash('${idea.id}', '${escapeHtml(name)}')">Delete</button>
+                        <button class="action-btn danger" onclick="confirmTrash('${idea.id}', '${escapeAttr(name)}')">Delete</button>
                     </div>
                 </div>
             `;
@@ -238,8 +238,8 @@ async function loadTrash() {
                         <span>Deleted ${updated}</span>
                     </div>
                     <div class="idea-actions">
-                        <button class="action-btn" onclick="confirmRestore('${idea.id}', '${escapeHtml(idea.product_name || "this idea")}')">Restore</button>
-                        <button class="action-btn danger" onclick="confirmPermanentDelete('${idea.id}', '${escapeHtml(idea.product_name || "this idea")}')">Delete Forever</button>
+                        <button class="action-btn" onclick="confirmRestore('${idea.id}', '${escapeAttr(idea.product_name || "this idea")}')">Restore</button>
+                        <button class="action-btn danger" onclick="confirmPermanentDelete('${idea.id}', '${escapeAttr(idea.product_name || "this idea")}')">Delete Forever</button>
                     </div>
                 </div>
             `;
@@ -257,6 +257,10 @@ function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
+}
+
+function escapeAttr(text) {
+    return escapeHtml(text).replace(/'/g, "&#39;");
 }
 
 // Inline editing

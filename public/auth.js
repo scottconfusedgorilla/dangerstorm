@@ -169,7 +169,7 @@ function updateAuthUI() {
                     <div class="auth-kebab-menu hidden">
                         <a href="/account" class="auth-kebab-item">Account</a>
                         <button id="sign-out-btn" class="auth-kebab-item">Sign out</button>
-                        <span class="auth-kebab-item build-label">build 054</span>
+                        <span class="auth-kebab-item build-label">build 055</span>
                     </div>
                 </div>
             </div>
