@@ -157,12 +157,13 @@ function updateAuthUI() {
         const email = currentUser.email;
         const tier = currentProfile?.tier || "free";
         const tierLabel = { pro: "Pro", pioneer: "Pioneer", free: "Free" }[tier] || "Free";
+        const onDashboard = window.location.pathname === "/dashboard";
         authBar.innerHTML = `
             <div class="auth-user">
-                <a href="/dashboard" class="auth-dashboard-btn" title="Dashboard">
+                ${onDashboard ? "" : `<a href="/dashboard" class="auth-dashboard-btn" title="Dashboard">
                     <svg class="header-bolt" width="12" height="16" viewBox="0 0 24 40" fill="currentColor"><polygon points="14,0 6,18 14,18 4,40 22,16 13,16 20,0"/></svg>
                     Dashboard
-                </a>
+                </a>`}
                 <a href="/account" class="auth-identity" title="Account">${email} · ${tierLabel}</a>
                 <div class="auth-kebab-wrap">
                     <button class="auth-kebab-btn" title="More">⋮</button>
@@ -170,7 +171,7 @@ function updateAuthUI() {
                         <a href="/account" class="auth-kebab-item">Account</a>
                         <a href="mailto:codewrangler@dangerstorm.net" class="auth-kebab-item">Feedback</a>
                         <button id="sign-out-btn" class="auth-kebab-item">Sign out</button>
-                        <span class="auth-kebab-item build-label">build 061</span>
+                        <span class="auth-kebab-item build-label">build 062</span>
                     </div>
                 </div>
             </div>

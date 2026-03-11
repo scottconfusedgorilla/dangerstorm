@@ -86,6 +86,11 @@ header {
     color: #000;
 }
 
+.auth-dashboard-btn .header-bolt {
+    position: relative;
+    top: 2px;
+}
+
 .auth-identity {
     color: var(--text-muted);
     white-space: nowrap;
@@ -197,7 +202,7 @@ header h1 {
 
 .header-bolt {
     vertical-align: middle;
-    margin: 0 -3px 0 -11px;
+    margin: 0 -7px 0 -11px;
 }
 
 header .accent {
