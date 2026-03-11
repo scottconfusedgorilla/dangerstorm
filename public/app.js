@@ -18,6 +18,30 @@ let isWaiting = false;
 let pendingFile = null; // { name, type, data } — data is base64 for images, text for text files
 let userHasScrolled = false;
 let sessionIP = null; // fetched once on load for message stamps
+let hasUnsavedWork = false;
+
+// Warn on browser close/refresh/external navigation
+window.addEventListener("beforeunload", (e) => {
+    if (hasUnsavedWork) {
+        e.preventDefault();
+        e.returnValue = "";
+    }
+});
+
+// Intercept internal navigation links when there's unsaved work
+document.addEventListener("click", (e) => {
+    if (!hasUnsavedWork) return;
+    const link = e.target.closest("a[href]");
+    if (!link) return;
+    const href = link.getAttribute("href");
+    if (!href || href.startsWith("mailto:") || href.startsWith("http")) return;
+    // Internal link (e.g. /dashboard, /account)
+    e.preventDefault();
+    if (confirm("You have unsaved work. Leave anyway?")) {
+        hasUnsavedWork = false;
+        window.location.href = href;
+    }
+});
 
 // Detect manual scroll: pause auto-scroll when user scrolls up
 window.addEventListener("scroll", () => {
@@ -163,6 +187,7 @@ refineBtn.addEventListener("click", () => {
 
 // Start over (shared logic)
 function doStartOver() {
+    hasUnsavedWork = false;
     conversationHistory = [];
     clearSession();
     clearPendingFile();
@@ -349,6 +374,7 @@ function showOutputs(output1, output2, output3, output4, output5, output6) {
 
     outputsContainer.classList.remove("hidden");
     document.getElementById("chat-actions").classList.add("hidden");
+    hasUnsavedWork = true;
     outputsContainer.scrollIntoView({ behavior: "smooth" });
 
     // Anonymous users: hide save, show sign-up CTA
@@ -610,6 +636,7 @@ async function doSaveIdea(btn) {
                 currentVersionNumber = forced.versionNumber;
                 updateIdeaUrl(getUser().id, forced.ideaId);
                 showSaveStatus("Saved as new version!", "success");
+                hasUnsavedWork = false;
                 currentProfile = await fetchProfile();
             } else {
                 window.location.href = `/${getUser().id}/${result.existingId}`;
@@ -621,6 +648,7 @@ async function doSaveIdea(btn) {
 
         currentIdeaId = result.ideaId;
         currentVersionNumber = result.versionNumber;
+        hasUnsavedWork = false;
         updateIdeaUrl(getUser().id, result.ideaId);
         currentProfile = await fetchProfile();
 
@@ -706,6 +734,7 @@ async function loadSavedIdea(ideaId) {
             if (o.output1) showOutputs(o.output1, o.output2 || "", o.output3 || "", o.output4 || "", o.output5 || "", o.output6 || "");
         }
 
+        hasUnsavedWork = false; // just loaded from DB, nothing unsaved
         inputEl.placeholder = "Tell me what to change...";
     } catch (err) {
         console.error("Failed to load idea:", err);
