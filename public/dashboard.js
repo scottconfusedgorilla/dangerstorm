@@ -133,22 +133,31 @@ function animateTrash(card) {
     return new Promise((resolve) => {
         const h = card.offsetHeight;
         card.style.height = h + "px";
-        card.style.transition = "transform 0.35s ease-in, opacity 0.35s ease-in";
+        card.style.transition = "transform 0.4s ease-in, opacity 0.4s ease-in";
         card.style.overflow = "hidden";
 
+        // Slide down toward the trash button
         requestAnimationFrame(() => {
-            card.style.transform = "translateX(120%) scale(0.95)";
+            card.style.transform = "translateY(60px) scale(0.95)";
             card.style.opacity = "0";
 
+            // Light up the trash button
+            const trashBtn = document.getElementById("trash-toggle-btn");
+            if (trashBtn) {
+                trashBtn.classList.add("flash");
+                setTimeout(() => trashBtn.classList.remove("flash"), 1500);
+            }
+
+            // Collapse the space
             setTimeout(() => {
                 card.style.transition = "height 0.3s ease, margin 0.3s ease, padding 0.3s ease";
                 card.style.height = "0px";
                 card.style.margin = "0";
                 card.style.padding = "0";
-            }, 300);
+            }, 350);
         });
 
-        setTimeout(() => resolve(), 600);
+        setTimeout(() => resolve(), 700);
     });
 }
 

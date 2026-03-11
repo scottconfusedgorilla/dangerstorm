@@ -998,6 +998,13 @@ header .tagline {
     opacity: 1;
 }
 
+.trash-can-btn.flash {
+    color: #EF4444;
+    border-color: #EF4444;
+    opacity: 1;
+    transition: opacity 1s ease 0.5s, color 1s ease 0.5s, border-color 1s ease 0.5s;
+}
+
 .trash-label {
     font-size: 0.65rem;
     font-weight: 600;
