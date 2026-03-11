@@ -26,12 +26,15 @@
 
         <div id="dashboard-container">
             <div class="dashboard-header">
-                <div class="idea-count" id="idea-count"></div>
+                <div class="dashboard-search-wrap">
+                    <input type="text" id="idea-search" class="idea-search" placeholder="Search ideas..." oninput="filterIdeas(this.value)">
+                </div>
                 <div class="dashboard-header-actions">
                     <button id="download-all-dashboard-btn" class="action-btn hidden" onclick="downloadAllIdeas()">Download All</button>
                     <a href="/?new=1" class="action-btn primary"><svg width="12" height="16" viewBox="0 0 24 40" fill="currentColor" style="vertical-align:middle;margin:-2px 4px 0 0;"><polygon points="14,0 6,18 14,18 4,40 22,16 13,16 20,0"/></svg>New Idea</a>
                 </div>
             </div>
+            <div class="idea-count" id="idea-count"></div>
 
             <div id="ideas-loading" class="dashboard-loading">Loading your ideas...</div>
             <div id="ideas-empty" class="dashboard-empty hidden">

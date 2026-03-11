@@ -26,12 +26,16 @@ async function loadDashboard() {
     if (profile) {
         const isPremium = profile.tier === "pro" || profile.tier === "pioneer";
         const max = isPremium ? 99 : 19;
-        countEl.textContent = `${profile.idea_count} of ${max} ideas used`;
+        countEl.textContent = `${profile.idea_count} of ${max} used`;
 
         // Show bulk download for Pro/Pioneer
         const dlBtn = document.getElementById("download-all-dashboard-btn");
         if (dlBtn) dlBtn.classList.toggle("hidden", !isPremium);
     }
+
+    // Clear search
+    const searchEl = document.getElementById("idea-search");
+    if (searchEl) searchEl.value = "";
 
     try {
         const ideas = await getIdeas();
@@ -261,6 +265,23 @@ function escapeHtml(text) {
 
 function escapeAttr(text) {
     return escapeHtml(text).replace(/'/g, "&#39;");
+}
+
+// Search / filter
+function filterIdeas(query) {
+    const q = query.toLowerCase().trim();
+    const cards = document.querySelectorAll("#ideas-grid .idea-card");
+    cards.forEach((card) => {
+        if (!q) {
+            card.classList.remove("hidden");
+            return;
+        }
+        const name = (card.querySelector(".idea-name")?.textContent || "").toLowerCase();
+        const domain = (card.querySelector(".idea-domain")?.textContent || "").toLowerCase();
+        const summary = (card.querySelector(".idea-summary")?.textContent || "").toLowerCase();
+        const match = name.includes(q) || domain.includes(q) || summary.includes(q);
+        card.classList.toggle("hidden", !match);
+    });
 }
 
 // Inline editing

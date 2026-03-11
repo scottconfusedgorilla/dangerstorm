@@ -909,12 +909,42 @@ header .tagline {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 8px;
 }
 
 .idea-count {
     color: var(--text-muted);
+    font-size: 0.75rem;
+    opacity: 0.5;
+    text-align: right;
+    margin-bottom: 16px;
+}
+
+.dashboard-search-wrap {
+    flex: 1;
+    min-width: 0;
+    margin-right: 12px;
+}
+
+.idea-search {
+    width: 100%;
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 8px 12px;
     font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.idea-search:focus {
+    border-color: var(--accent);
+}
+
+.idea-search::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
 }
 
 .upgrade-link {
