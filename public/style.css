@@ -186,7 +186,7 @@ header h1 {
 
 .header-bolt {
     vertical-align: middle;
-    margin: 0 -3px;
+    margin: 0 -6px;
 }
 
 header .accent {
@@ -197,12 +197,20 @@ header .tagline {
     color: var(--text-muted);
     font-size: 0.875rem;
     margin-top: 4px;
+    text-align: center;
 }
 
 .build-number {
     color: var(--border);
     font-size: 0.65rem;
     margin-top: 2px;
+}
+
+.build-label {
+    color: var(--text-muted) !important;
+    font-size: 0.65rem !important;
+    cursor: default !important;
+    opacity: 0.6;
 }
 
 /* Auth Modal */

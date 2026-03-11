@@ -167,12 +167,16 @@ function updateAuthUI() {
                 <div class="auth-kebab-wrap">
                     <button class="auth-kebab-btn" title="More">⋮</button>
                     <div class="auth-kebab-menu hidden">
+                        <a href="/account" class="auth-kebab-item">Account</a>
                         <button id="sign-out-btn" class="auth-kebab-item">Sign out</button>
+                        <span class="auth-kebab-item build-label">build 054</span>
                     </div>
                 </div>
             </div>
         `;
         document.getElementById("sign-out-btn").addEventListener("click", signOut);
+        const buildStandalone = document.getElementById("build-number-standalone");
+        if (buildStandalone) buildStandalone.classList.add("hidden");
         const kebabBtn = authBar.querySelector(".auth-kebab-btn");
         const kebabMenu = authBar.querySelector(".auth-kebab-menu");
         kebabBtn.addEventListener("click", (e) => {
