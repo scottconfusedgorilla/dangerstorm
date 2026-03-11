@@ -357,7 +357,11 @@ async function sendMessage() {
     const text = inputEl.value.trim();
     if ((!text && !pendingFile) || isWaiting) return;
 
-    userHasScrolled = false; // resume auto-scroll for new response
+    // Only resume auto-scroll if user is already near the bottom
+    const distFromBottom = document.body.scrollHeight - window.innerHeight - window.scrollY;
+    if (distFromBottom <= 150) {
+        userHasScrolled = false;
+    }
     const displayText = text || `[Attached: ${pendingFile.name}]`;
     const attachedFile = pendingFile;
 
