@@ -118,9 +118,6 @@ function openIdea(ideaId) {
 }
 
 async function confirmTrash(ideaId, name) {
-    if (!await dsConfirm(`Move "${name}" to trash?`, "Trash it")) return;
-
-    // Animate the card crumpling and flying to the trash can
     const card = document.querySelector(`.idea-card[data-id="${ideaId}"]`);
     if (card) await animateTrash(card);
 
