@@ -76,6 +76,20 @@ function renderAccount(user, profile) {
         });
     }
 
+    // Files URL (Junk Drawer)
+    const filesInput = document.getElementById("files-url-input");
+    filesInput.value = profile?.files_url || "";
+    document.getElementById("files-url-save").addEventListener("click", async () => {
+        const val = filesInput.value.trim();
+        try {
+            const sb = getSupabase();
+            await sb.from("profiles").update({ files_url: val || null }).eq("id", user.id);
+            showMessage("Junk Drawer link saved!", "success");
+        } catch (err) {
+            showMessage("Failed to save: " + err.message, "error");
+        }
+    });
+
     // Check for success/cancel URL params
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "1") {
