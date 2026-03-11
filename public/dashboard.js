@@ -59,17 +59,24 @@ async function loadDashboard() {
             const parent = idea.parent;
             const branchedFrom = parent ? `<p class="idea-branch-from">Branched from <a href="javascript:openIdea('${parent.id}')">${escapeHtml(cleanName(parent.product_name) || "Untitled")}</a></p>` : "";
             const folderName = rawDomain || "No Domain";
-            const filesLink = filesUrl ? `<a href="${escapeHtml(filesUrl.replace(/\/+$/, ""))}/${encodeURIComponent(folderName)}" target="_blank" rel="noopener" class="idea-files-link" title="Open files folder">&#128193;</a>` : "";
+            const folderHref = filesUrl
+                ? `${escapeHtml(filesUrl.replace(/\/+$/, ""))}/${encodeURIComponent(folderName)}`
+                : "/account";
+            const folderTarget = filesUrl ? ' target="_blank" rel="noopener"' : '';
+            const folderTitle = filesUrl ? "Open files folder" : "Set up your Junk Drawer folder";
+            const filesLink = `<a href="${folderHref}"${folderTarget} class="idea-files-link" title="${folderTitle}">&#128193;</a>`;
 
             return `
                 <div class="idea-card" data-id="${idea.id}" draggable="true">
                     <div class="idea-card-header">
                         <span class="drag-handle" title="Drag to reorder">⠿</span>
                         <h3 class="idea-name editable" onclick="editField(this, '${idea.id}', 'product_name')" title="Click to edit">${escapeHtml(name)}</h3>
-                        ${filesLink}
                         <span class="idea-status ${idea.status}">${idea.status}</span>
                     </div>
-                    <p class="idea-domain editable" onclick="editField(this, '${idea.id}', 'domain')" title="Click to edit">${escapeHtml(domain)}</p>
+                    <div class="idea-domain-row">
+                        <p class="idea-domain editable" onclick="editField(this, '${idea.id}', 'domain')" title="Click to edit">${escapeHtml(domain)}</p>
+                        ${filesLink}
+                    </div>
                     ${branchedFrom}
                     ${summary ? `<p class="idea-summary">${escapeHtml(summary)}</p>` : ""}
                     <div class="idea-meta">
