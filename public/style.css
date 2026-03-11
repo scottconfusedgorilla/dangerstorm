@@ -50,6 +50,7 @@ header {
 
 .header-brand {
     text-align: center;
+    min-width: 0;
 }
 
 #auth-bar {
@@ -191,6 +192,7 @@ header h1 {
     font-weight: 800;
     letter-spacing: 0.1em;
     color: var(--text);
+    white-space: nowrap;
 }
 
 .header-bolt {
