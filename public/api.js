@@ -25,7 +25,7 @@ async function getIdeas() {
     const sb = getSupabase();
     const { data, error } = await sb
         .from("ideas")
-        .select("*, idea_versions(count)")
+        .select("*, idea_versions(count), parent:branched_from_id(id, product_name)")
         .neq("status", "trash")
         .order("sort_order", { ascending: true, nullsFirst: false })
         .order("updated_at", { ascending: false });
@@ -117,6 +117,25 @@ async function restoreIdea(ideaId, force = false) {
     const data = await response.json();
     if (response.status === 409 && data.conflict) return data;
     if (!response.ok) throw new Error(data.error || "Failed to restore idea");
+    currentProfile = await fetchProfile();
+    return data;
+}
+
+async function branchIdea(ideaId) {
+    const token = await getAccessToken();
+    if (!token) throw new Error("Not authenticated");
+
+    const response = await fetch("/api/branch-idea", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ideaId }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Failed to branch idea");
     currentProfile = await fetchProfile();
     return data;
 }

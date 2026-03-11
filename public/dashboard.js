@@ -53,6 +53,8 @@ async function loadDashboard() {
             const domain = (idea.domain === "None" || idea.domain.startsWith("none-")) ? "No domain" : idea.domain;
             const name = cleanName(idea.product_name) || "Untitled";
             const summary = idea.tagline || "";
+            const parent = idea.parent;
+            const branchedFrom = parent ? `<p class="idea-branch-from">Branched from <a href="javascript:openIdea('${parent.id}')">${escapeHtml(cleanName(parent.product_name) || "Untitled")}</a></p>` : "";
 
             return `
                 <div class="idea-card" data-id="${idea.id}" draggable="true">
@@ -62,6 +64,7 @@ async function loadDashboard() {
                         <span class="idea-status ${idea.status}">${idea.status}</span>
                     </div>
                     <p class="idea-domain editable" onclick="editField(this, '${idea.id}', 'domain')" title="Click to edit">${escapeHtml(domain)}</p>
+                    ${branchedFrom}
                     ${summary ? `<p class="idea-summary">${escapeHtml(summary)}</p>` : ""}
                     <div class="idea-meta">
                         <span>${versionCount} version${versionCount !== 1 ? "s" : ""}</span>
@@ -69,6 +72,7 @@ async function loadDashboard() {
                     </div>
                     <div class="idea-actions">
                         <button class="action-btn" onclick="openIdea('${idea.id}')">Open</button>
+                        <button class="action-btn" onclick="doBranch('${idea.id}', '${escapeAttr(name)}')">Branch</button>
                         <button class="action-btn danger" onclick="confirmTrash('${idea.id}', '${escapeAttr(name)}')">Delete</button>
                     </div>
                 </div>
@@ -78,6 +82,18 @@ async function loadDashboard() {
         initDragAndDrop(gridEl);
     } catch (err) {
         loadingEl.textContent = "Failed to load ideas: " + err.message;
+    }
+}
+
+async function doBranch(ideaId, name) {
+    if (!await dsConfirm(`Branch "${name}" into a new idea?`, "Branch it")) return;
+
+    try {
+        const result = await branchIdea(ideaId);
+        // Open the new branched idea
+        openIdea(result.ideaId);
+    } catch (err) {
+        dsAlert("Failed to branch: " + err.message);
     }
 }
 

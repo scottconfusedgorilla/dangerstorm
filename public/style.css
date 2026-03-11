@@ -1190,6 +1190,40 @@ h3.editable .inline-edit {
     color: #fff;
 }
 
+/* Branch */
+.branch-banner {
+    font-size: 0.85rem;
+    color: var(--accent);
+    padding: 8px 16px;
+    margin-bottom: 8px;
+    opacity: 0.85;
+}
+
+.branch-banner a {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
+.branch-banner a:hover {
+    color: var(--text);
+}
+
+.idea-branch-from {
+    font-size: 0.8rem;
+    color: var(--accent);
+    opacity: 0.7;
+    margin-bottom: 4px;
+}
+
+.idea-branch-from a {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
+.idea-branch-from a:hover {
+    color: var(--text);
+}
+
 /* Account */
 #account-container {
     padding: 24px 0 32px;

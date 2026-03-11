@@ -198,6 +198,43 @@ function doStartOver() {
     initConversation();
 }
 
+// Branch button
+document.getElementById("branch-btn").addEventListener("click", async () => {
+    if (!requireAuth("branch")) return;
+    const btn = document.getElementById("branch-btn");
+    const origText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Branching...";
+
+    try {
+        // Save current idea first if unsaved
+        if (hasUnsavedWork && currentIdeaId) {
+            document.getElementById("save-idea-btn").click();
+            // Wait briefly for save to complete
+            await new Promise(r => setTimeout(r, 1000));
+        }
+
+        // Need a saved idea to branch from
+        if (!currentIdeaId) {
+            dsAlert("Save this idea first before branching.");
+            btn.disabled = false;
+            btn.textContent = origText;
+            return;
+        }
+
+        const result = await branchIdea(currentIdeaId);
+        const user = getUser();
+        if (user) {
+            hasUnsavedWork = false;
+            window.location.href = `/${user.id}/${result.ideaId}`;
+        }
+    } catch (err) {
+        dsAlert("Failed to branch: " + err.message);
+        btn.disabled = false;
+        btn.textContent = origText;
+    }
+});
+
 // Start over button (outputs section)
 startOverBtn.addEventListener("click", doStartOver);
 
@@ -736,6 +773,20 @@ async function loadSavedIdea(ideaId) {
 
         hasUnsavedWork = false; // just loaded from DB, nothing unsaved
         inputEl.placeholder = "Tell me what to change...";
+
+        // Show "Branched from" banner if applicable
+        if (idea.branched_from_id) {
+            try {
+                const parent = await getIdea(idea.branched_from_id);
+                const user = getUser();
+                const banner = document.getElementById("branch-banner");
+                const parentName = (parent.product_name || "Untitled").replace(/\*+/g, "").trim();
+                banner.innerHTML = `Branched from <a href="/${user.id}/${parent.id}">${parentName}</a>`;
+                banner.classList.remove("hidden");
+            } catch (e) {
+                // Parent may have been deleted — ignore
+            }
+        }
     } catch (err) {
         console.error("Failed to load idea:", err);
         initConversation();

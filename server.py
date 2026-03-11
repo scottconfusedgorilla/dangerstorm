@@ -649,6 +649,83 @@ def save_idea():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/branch-idea", methods=["POST"])
+@require_auth
+def branch_idea():
+    try:
+        data = request.json
+        idea_id = data.get("ideaId")
+        if not idea_id:
+            return jsonify({"error": "No idea ID provided"}), 400
+
+        sb = get_supabase()
+        user_id = request.user.id
+
+        # Check idea limit
+        profile = sb.table("profiles").select("tier, idea_count").eq("id", user_id).single().execute()
+        if not profile.data:
+            return jsonify({"error": "Profile not found"}), 404
+
+        tier = profile.data["tier"]
+        idea_count = profile.data["idea_count"]
+        max_ideas = 99 if tier in ("pro", "pioneer") else 19
+
+        if idea_count >= max_ideas:
+            return jsonify({"error": f"Idea limit reached ({max_ideas}). Upgrade to Pro for more."}), 403
+
+        # Get the source idea
+        source = sb.table("ideas").select("*").eq("id", idea_id).eq("user_id", user_id).single().execute()
+        if not source.data:
+            return jsonify({"error": "Idea not found"}), 404
+
+        # Get latest version of source
+        versions = sb.table("idea_versions").select("*").eq("idea_id", idea_id).order("version_number", desc=True).limit(1).execute()
+        if not versions.data:
+            return jsonify({"error": "No versions found for this idea"}), 404
+
+        latest = versions.data[0]
+
+        # Create unique domain for the branch
+        import uuid
+        branch_domain = f"none-{uuid.uuid4().hex[:8]}"
+
+        # Bump sort_order so branch lands at top
+        existing_ideas = sb.table("ideas").select("id, sort_order").eq("user_id", user_id).neq("status", "trash").execute()
+        for ei in existing_ideas.data:
+            sb.table("ideas").update({"sort_order": (ei.get("sort_order") or 0) + 1}).eq("id", ei["id"]).execute()
+
+        # Create the branched idea
+        branch_name = (source.data.get("product_name") or "Untitled") + " (branch)"
+        idea_result = sb.table("ideas").insert({
+            "user_id": user_id,
+            "domain": branch_domain,
+            "product_name": branch_name,
+            "tagline": source.data.get("tagline", ""),
+            "status": source.data.get("status", "draft"),
+            "sort_order": 0,
+            "branched_from_id": idea_id,
+        }).execute()
+
+        new_idea_id = idea_result.data[0]["id"]
+
+        # Copy the latest version to the new idea
+        sb.table("idea_versions").insert({
+            "idea_id": new_idea_id,
+            "version_number": 1,
+            "conversation": latest.get("conversation", []),
+            "outputs": latest.get("outputs", {}),
+        }).execute()
+
+        return jsonify({
+            "ideaId": new_idea_id,
+            "parentId": idea_id,
+            "parentName": source.data.get("product_name", "Untitled"),
+        })
+    except Exception as e:
+        print(f"[branch-idea] Error: {type(e).__name__}: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/restore-idea", methods=["POST"])
 @require_auth
 def restore_idea():
