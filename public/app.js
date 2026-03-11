@@ -31,7 +31,16 @@ window.addEventListener("beforeunload", (e) => {
 // Intercept internal navigation links when there's unsaved work
 document.addEventListener("click", (e) => {
     if (!hasUnsavedWork) return;
-    const link = e.target.closest("a[href]");
+    // Walk up from target to find <a> — handles SVG elements where closest() may not cross boundary
+    let el = e.target;
+    let link = null;
+    while (el && el !== document) {
+        if (el.tagName === "A" && el.hasAttribute("href")) {
+            link = el;
+            break;
+        }
+        el = el.parentElement || el.parentNode;
+    }
     if (!link) return;
     const href = link.getAttribute("href");
     if (!href || href.startsWith("mailto:") || href.startsWith("http")) return;
