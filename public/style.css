@@ -485,6 +485,15 @@ header .tagline {
     flex-shrink: 1;
 }
 
+/* When outputs are visible, flatten to single scroll context */
+#app.has-outputs #chat-container {
+    flex: none;
+    justify-content: flex-start;
+}
+#app.has-outputs #messages {
+    overflow-y: visible;
+}
+
 .message {
     max-width: 85%;
     padding: 12px 16px;
