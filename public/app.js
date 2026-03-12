@@ -190,7 +190,6 @@ document.querySelectorAll(".copy-btn").forEach((btn) => {
 // Refine button
 refineBtn.addEventListener("click", () => {
     outputsContainer.classList.add("hidden");
-    document.getElementById("app").classList.remove("has-outputs");
     inputEl.placeholder = "Tell me what to change...";
     inputEl.focus();
 });
@@ -203,7 +202,6 @@ function doStartOver() {
     clearPendingFile();
     messagesEl.innerHTML = "";
     outputsContainer.classList.add("hidden");
-    document.getElementById("app").classList.remove("has-outputs");
     inputEl.placeholder = "Type your answer...";
     inputEl.focus();
     initConversation();
@@ -423,7 +421,6 @@ function showOutputs(output1, output2, output3, output4, output5, output6) {
     outputsContainer.classList.remove("hidden");
     document.getElementById("chat-actions").classList.add("hidden");
     hasUnsavedWork = true;
-    document.getElementById("app").classList.add("has-outputs");
     outputsContainer.scrollIntoView({ behavior: "smooth" });
 
     // Anonymous users: hide save, show sign-up CTA
@@ -785,7 +782,7 @@ async function loadSavedIdea(ideaId) {
 
         hasUnsavedWork = false; // just loaded from DB, nothing unsaved
         inputEl.placeholder = "Tell me what to change...";
-        document.getElementById("app").scrollTo(0, 0);
+        window.scrollTo(0, 0);
 
         // Show "Branched from" banner if applicable
         if (idea.branched_from_id) {
