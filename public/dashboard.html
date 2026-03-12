@@ -36,12 +36,14 @@
             </div>
             <div class="idea-count" id="idea-count"></div>
 
-            <div id="ideas-loading" class="dashboard-loading">Loading your ideas...</div>
-            <div id="ideas-empty" class="dashboard-empty hidden">
-                <p>No ideas yet. Start your first one!</p>
-                <a href="/" class="action-btn primary">Create your first idea</a>
+            <div id="ideas-scroll" class="ideas-scroll">
+                <div id="ideas-loading" class="dashboard-loading">Loading your ideas...</div>
+                <div id="ideas-empty" class="dashboard-empty hidden">
+                    <p>No ideas yet. Start your first one!</p>
+                    <a href="/" class="action-btn primary">Create your first idea</a>
+                </div>
+                <div id="ideas-grid" class="ideas-grid"></div>
             </div>
-            <div id="ideas-grid" class="ideas-grid"></div>
         </div>
 
         <button id="trash-toggle-btn" class="trash-can-btn" onclick="toggleTrash()" title="Crappy Ideas">
