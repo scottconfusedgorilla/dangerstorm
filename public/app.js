@@ -53,15 +53,14 @@ document.addEventListener("click", (e) => {
 });
 
 // Detect manual scroll: pause auto-scroll when user scrolls up
-const appEl = document.getElementById("app");
-appEl.addEventListener("scroll", () => {
-    const distFromBottom = appEl.scrollHeight - appEl.clientHeight - appEl.scrollTop;
+window.addEventListener("scroll", () => {
+    const distFromBottom = document.body.scrollHeight - window.innerHeight - window.scrollY;
     userHasScrolled = distFromBottom > 150;
 });
 
 function autoScroll() {
     if (!userHasScrolled) {
-        appEl.scrollTo(0, appEl.scrollHeight);
+        window.scrollTo(0, document.body.scrollHeight);
     }
 }
 
@@ -783,7 +782,6 @@ async function loadSavedIdea(ideaId) {
 
         hasUnsavedWork = false; // just loaded from DB, nothing unsaved
         inputEl.placeholder = "Tell me what to change...";
-        appEl.scrollTo(0, 0);
 
         // Show "Branched from" banner if applicable
         if (idea.branched_from_id) {
