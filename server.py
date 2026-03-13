@@ -552,11 +552,22 @@ def view_idea(user_id, idea_id):
     return send_from_directory("public", "index.html")
 
 
+def strip_null_bytes(obj):
+    """Recursively strip \u0000 from strings — PostgreSQL text columns reject them."""
+    if isinstance(obj, str):
+        return obj.replace("\x00", "")
+    if isinstance(obj, dict):
+        return {k: strip_null_bytes(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [strip_null_bytes(v) for v in obj]
+    return obj
+
+
 @app.route("/api/save-idea", methods=["POST"])
 @require_auth
 def save_idea():
     try:
-        data = request.json
+        data = strip_null_bytes(request.json)
         user_id = request.user.id
         domain = data.get("domain", "None") or "None"
         # Ensure domainless ideas get unique placeholder to avoid unique constraint collision
