@@ -28,9 +28,11 @@ async function loadDashboard() {
         const max = isPremium ? 99 : 19;
         countEl.textContent = `${profile.idea_count} of ${max} used`;
 
-        // Show bulk download for Pro/Pioneer
+        // Show pro features for Pro/Pioneer
         const dlBtn = document.getElementById("download-all-dashboard-btn");
         if (dlBtn) dlBtn.classList.toggle("hidden", !isPremium);
+        const portBtn = document.getElementById("portfolio-btn");
+        if (portBtn) portBtn.classList.toggle("hidden", !isPremium);
     }
 
     // Clear search
@@ -478,6 +480,109 @@ async function downloadAllIdeas() {
         if (btn) { btn.disabled = false; btn.textContent = "Download All"; }
     }
 }
+
+// Portfolio prompt generation
+async function generatePortfolio() {
+    const btn = document.getElementById("portfolio-btn");
+    if (btn) { btn.disabled = true; btn.textContent = "Generating..."; }
+
+    try {
+        const ideas = await getIdeas();
+        const complete = ideas.filter(i => i.status === "complete");
+
+        if (!complete.length) {
+            dsAlert("No completed ideas to build a portfolio from.");
+            return;
+        }
+
+        // Gather details for each idea
+        const entries = [];
+        for (const idea of complete) {
+            const name = cleanName(idea.product_name) || "Untitled";
+            const domain = (idea.domain === "None" || idea.domain?.startsWith("none-")) ? "" : idea.domain;
+            const tagline = idea.tagline || "";
+
+            let outputs = {};
+            try {
+                const versions = await getIdeaVersions(idea.id);
+                if (versions.length) outputs = versions[0].outputs || {};
+            } catch (e) { /* skip */ }
+
+            entries.push({ name, domain, tagline, outputs });
+        }
+
+        const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+        const ideaSlides = entries.map((e, i) => {
+            const domainLine = e.domain ? `   - Domain: ${e.domain}` : "";
+            const taglineLine = e.tagline ? `   - Tagline: "${e.tagline}"` : "";
+            // Pull the problem/solution from the deck prompt if available
+            const deckPrompt = e.outputs.output1 || "";
+            return `
+### Slide ${i + 2}: ${e.name}
+   - Product name: ${e.name}${domainLine}${taglineLine}
+   - Use the following generated deck prompt for context on the problem, solution, audience, and revenue model:
+${deckPrompt ? "   ```\n   " + deckPrompt.substring(0, 1500).replace(/\n/g, "\n   ") + "\n   ```" : "   (No deck prompt available — use the tagline and product name to infer.)"}`;
+        }).join("\n");
+
+        const prompt = `Create a professional product portfolio presentation in PowerPoint (16:9 format).
+
+This is a portfolio of ${entries.length} product ideas from DangerStorm.net — a product idea studio by Scott Welch / Atomic Maple.
+
+## Design Direction
+- Bold, dark theme: #0F172A background, white text, #F97316 (electric orange) accents
+- Clean typography: Trebuchet MS or Georgia for headers, Calibri for body
+- Every slide should be designed, not just typed — use icon concepts, visual elements, stat callouts
+- Dark title and closing slides, slightly lighter content slides
+
+## Slide Structure
+
+### Slide 1: TITLE
+   - "Product Portfolio"
+   - "Scott Welch | atomicmaple.vc | ${today}"
+   - Subtitle: "${entries.length} Ideas. ${entries.length} Domains. ${entries.length} Decks."
+${ideaSlides}
+
+### Slide ${entries.length + 2}: CLOSING
+   - "DangerStorm.net"
+   - "One idea. One domain. One deck."
+   - "Scott Welch | atomicmaple.vc"
+
+## Per-Idea Slide Format
+Each product slide should include:
+- Product name (large) and domain
+- One-line tagline
+- 2-3 bullet summary of the problem it solves and the key insight
+- Target audience
+- Revenue model (one line)
+- A visual element: icon concept, color accent bar, or category badge
+
+Keep each idea to ONE slide. This is a portfolio overview, not a deep dive. Think investor summary, not pitch deck.`;
+
+        document.getElementById("portfolio-output").textContent = prompt;
+        document.getElementById("portfolio-overlay").classList.remove("hidden");
+    } catch (err) {
+        dsAlert("Failed to generate portfolio: " + err.message);
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "Portfolio"; }
+    }
+}
+
+function copyPortfolio() {
+    const text = document.getElementById("portfolio-output").textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector(".portfolio-panel .copy-btn");
+        if (btn) { btn.textContent = "Copied!"; setTimeout(() => btn.textContent = "Copy", 1500); }
+    });
+}
+
+function closePortfolio() {
+    document.getElementById("portfolio-overlay").classList.add("hidden");
+}
+
+// Close portfolio on overlay click
+document.getElementById("portfolio-overlay")?.addEventListener("click", (e) => {
+    if (e.target.classList.contains("portfolio-overlay")) closePortfolio();
+});
 
 // Boot
 initSupabase();

@@ -30,6 +30,7 @@
                     <input type="text" id="idea-search" class="idea-search" placeholder="Search ideas..." oninput="filterIdeas(this.value)">
                 </div>
                 <div class="dashboard-header-actions">
+                    <button id="portfolio-btn" class="action-btn hidden" onclick="generatePortfolio()">Portfolio</button>
                     <button id="download-all-dashboard-btn" class="action-btn hidden" onclick="downloadAllIdeas()">Download All</button>
                     <a href="/?new=1" class="action-btn primary"><svg width="12" height="16" viewBox="0 0 24 40" fill="currentColor" style="vertical-align:middle;margin:-2px 4px 0 0;"><polygon points="14,0 6,18 14,18 4,40 22,16 13,16 20,0"/></svg>New Idea</a>
                 </div>
@@ -54,6 +55,19 @@
             </svg>
             <span class="trash-label">Crappy Ideas</span>
         </button>
+    </div>
+
+    <div id="portfolio-overlay" class="portfolio-overlay hidden">
+        <div class="portfolio-panel">
+            <div class="output-header">
+                <h3>PORTFOLIO PROMPT</h3>
+                <div class="output-header-actions">
+                    <button class="copy-btn" onclick="copyPortfolio()">Copy</button>
+                    <button class="copy-btn" onclick="closePortfolio()" style="background:transparent;color:var(--text-muted);">Close</button>
+                </div>
+            </div>
+            <pre id="portfolio-output" class="output-content"></pre>
+        </div>
     </div>
 
     <div id="ds-modal-overlay" class="ds-modal-overlay hidden">
