@@ -419,11 +419,11 @@ function showOutputs(output1, output2, output3, output4, output5, output6) {
         output4El.classList.toggle("hidden", !content4 || !content4.textContent);
     }
 
-    // Extras (output-2, output-3, output-6) are controlled by checkboxes
-    applyExtrasPrefs();
-
     outputsContainer.classList.remove("hidden");
     document.getElementById("chat-actions").classList.add("hidden");
+
+    // Extras (output-2, output-3, output-6) are controlled by checkboxes
+    applyExtrasPrefs();
     hasUnsavedWork = true;
     outputsContainer.scrollIntoView({ behavior: "smooth" });
 
