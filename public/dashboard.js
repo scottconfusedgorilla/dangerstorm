@@ -336,6 +336,12 @@ function clearDropIndicators(grid) {
 }
 
 function initDragAndDrop(grid) {
+    // Allow dropping anywhere in the grid (gaps between cards)
+    grid.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+    });
+
     const cards = grid.querySelectorAll(".idea-card");
 
     cards.forEach((card) => {
