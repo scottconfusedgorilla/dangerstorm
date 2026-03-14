@@ -628,14 +628,21 @@ def save_idea():
             existing_ideas = sb.table("ideas").select("id, sort_order").eq("user_id", user_id).neq("status", "trash").execute()
             for ei in existing_ideas.data:
                 sb.table("ideas").update({"sort_order": (ei.get("sort_order") or 0) + 1}).eq("id", ei["id"]).execute()
-            idea_result = sb.table("ideas").insert({
-                "user_id": user_id,
-                "domain": domain,
-                "product_name": product_name,
-                "tagline": tagline,
-                "status": idea_status,
-                "sort_order": 0,
-            }).execute()
+            try:
+                idea_result = sb.table("ideas").insert({
+                    "user_id": user_id,
+                    "domain": domain,
+                    "product_name": product_name,
+                    "tagline": tagline,
+                    "status": idea_status,
+                    "sort_order": 0,
+                }).execute()
+            except Exception as insert_err:
+                err_str = str(insert_err)
+                print(f"[save-idea] Insert failed for user={user_id} domain={domain} name={product_name}: {err_str}", flush=True)
+                if "unique" in err_str.lower() or "duplicate" in err_str.lower() or "23505" in err_str:
+                    return jsonify({"error": f"You already have an idea saved with the domain \"{domain}\". Try saving with a different domain, or update the existing idea from your dashboard."}), 409
+                raise
             idea_id = idea_result.data[0]["id"]
         else:
             idea_id = existing.data[0]["id"]
