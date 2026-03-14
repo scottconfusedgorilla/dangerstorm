@@ -72,6 +72,7 @@ async function loadDashboard() {
             return `
                 <div class="idea-card" data-id="${idea.id}" draggable="true">
                     <div class="idea-card-header">
+                        <span class="drag-handle" title="Drag to reorder">⠿</span>
                         <span class="nudge-arrows">
                             <button class="nudge-btn" onclick="nudgeIdea('${idea.id}', -1)" title="Move up">▲</button>
                             <button class="nudge-btn" onclick="nudgeIdea('${idea.id}', 1)" title="Move down">▼</button>
@@ -363,6 +364,11 @@ async function nudgeIdea(ideaId, direction) {
     } else {
         grid.insertBefore(sibling, card);
     }
+
+    // Re-focus the same nudge button so user can click repeatedly
+    const btnIndex = direction === -1 ? 0 : 1;
+    const btn = card.querySelectorAll(".nudge-btn")[btnIndex];
+    if (btn) btn.focus();
 
     saveOrder(grid);
 }

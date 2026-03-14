@@ -1131,21 +1131,32 @@ header .tagline {
     border-radius: 2px;
 }
 
+.drag-handle {
+    cursor: grab;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    user-select: none;
+    padding-right: 4px;
+    line-height: 1;
+}
+.drag-handle:active {
+    cursor: grabbing;
+}
 .nudge-arrows {
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 0;
     margin-right: 6px;
 }
 .nudge-btn {
     background: none;
     border: none;
     color: var(--text-muted);
-    font-size: 0.5rem;
+    font-size: 0.7rem;
     line-height: 1;
-    padding: 2px 4px;
+    padding: 4px 5px;
     cursor: pointer;
-    opacity: 0.4;
+    opacity: 0.5;
     transition: opacity 0.15s, color 0.15s;
 }
 .nudge-btn:hover {
