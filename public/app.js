@@ -668,7 +668,7 @@ async function doSaveIdea(btn) {
     btn.textContent = "Saving...";
 
     try {
-        const result = await saveIdea(domain, productName, tagline, conversationHistory, outputs);
+        const result = await saveIdea(domain, productName, tagline, conversationHistory, outputs, false, currentIdeaId);
 
         // Handle domain conflict
         if (result.conflict) {

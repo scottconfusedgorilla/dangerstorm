@@ -590,9 +590,18 @@ def save_idea():
         idea_count = profile.data["idea_count"]
         max_ideas = 99 if tier in ("pro", "pioneer") else 19
 
-        # Check if this domain already has a non-trashed idea (skip for domainless ideas)
+        # If client already knows the idea ID, use it directly (re-save)
+        existing_idea_id = data.get("existingIdeaId")
         force = data.get("force", False)
-        if domain and domain != "None":
+
+        if existing_idea_id:
+            # Verify this idea belongs to the user
+            check = sb.table("ideas").select("id, product_name").eq("id", existing_idea_id).eq("user_id", user_id).neq("status", "trash").execute()
+            if check.data:
+                existing = check
+            else:
+                existing = type('', (), {'data': []})()
+        elif domain and not domain.startswith("none-"):
             existing = sb.table("ideas").select("id, product_name").eq("user_id", user_id).eq("domain", domain).neq("status", "trash").execute()
         else:
             existing = type('', (), {'data': []})()  # empty result
