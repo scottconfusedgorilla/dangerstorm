@@ -412,11 +412,15 @@ function showOutputs(output1, output2, output3, output4, output5, output6) {
     document.getElementById("output-6-content").textContent = output6 || "";
     currentSummary = output5 || "";
 
-    const extrasBlocks = document.querySelectorAll("#output-2, #output-3, #output-4, #output-6");
-    extrasBlocks.forEach((el) => {
-        const content = el.querySelector(".output-content");
-        el.classList.toggle("hidden", !content || !content.textContent);
-    });
+    // output-4 (intro pitch) shows if it has content
+    const output4El = document.getElementById("output-4");
+    if (output4El) {
+        const content4 = output4El.querySelector(".output-content");
+        output4El.classList.toggle("hidden", !content4 || !content4.textContent);
+    }
+
+    // Extras (output-2, output-3, output-6) are controlled by checkboxes
+    applyExtrasPrefs();
 
     outputsContainer.classList.remove("hidden");
     document.getElementById("chat-actions").classList.add("hidden");
@@ -431,6 +435,55 @@ function showOutputs(output1, output2, output3, output4, output5, output6) {
         document.getElementById("save-idea-btn").classList.remove("hidden");
         document.getElementById("anon-cta").classList.add("hidden");
     }
+}
+
+// Extras display preferences (per-idea, stored in localStorage)
+function getExtrasPrefs() {
+    const key = currentIdeaId ? `ds-extras-${currentIdeaId}` : null;
+    if (!key) return { carrd: false, kit: false, build: false };
+    try {
+        return JSON.parse(localStorage.getItem(key)) || { carrd: false, kit: false, build: false };
+    } catch { return { carrd: false, kit: false, build: false }; }
+}
+
+function saveExtrasPrefs(prefs) {
+    if (!currentIdeaId) return;
+    localStorage.setItem(`ds-extras-${currentIdeaId}`, JSON.stringify(prefs));
+}
+
+function applyExtrasPrefs() {
+    const prefs = getExtrasPrefs();
+    const map = { carrd: "output-2", kit: "output-3", build: "output-6" };
+
+    // Set checkboxes
+    document.getElementById("toggle-carrd").checked = prefs.carrd;
+    document.getElementById("toggle-kit").checked = prefs.kit;
+    document.getElementById("toggle-build").checked = prefs.build;
+
+    // Show/hide blocks based on prefs AND whether they have content
+    for (const [pref, blockId] of Object.entries(map)) {
+        const block = document.getElementById(blockId);
+        if (!block) continue;
+        const content = block.querySelector(".output-content");
+        const hasContent = content && content.textContent.trim();
+        block.classList.toggle("hidden", !prefs[pref] || !hasContent);
+    }
+
+    // Show the toggles row if outputs are visible
+    const togglesEl = document.getElementById("extras-toggles");
+    if (togglesEl) togglesEl.classList.toggle("hidden", outputsContainer.classList.contains("hidden"));
+}
+
+function toggleExtra(blockId, checked, prefKey) {
+    const prefs = getExtrasPrefs();
+    prefs[prefKey] = checked;
+    saveExtrasPrefs(prefs);
+
+    const block = document.getElementById(blockId);
+    if (!block) return;
+    const content = block.querySelector(".output-content");
+    const hasContent = content && content.textContent.trim();
+    block.classList.toggle("hidden", !checked || !hasContent);
 }
 
 async function sendMessage() {

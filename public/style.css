@@ -748,6 +748,25 @@ header .tagline {
     cursor: wait;
 }
 
+.extras-toggles {
+    display: flex;
+    gap: 16px;
+    padding: 8px 0 12px;
+    flex-wrap: wrap;
+}
+.extras-toggles label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+.extras-toggles input[type="checkbox"] {
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
 .output-block {
     margin-bottom: 24px;
     background: var(--bg-light);
