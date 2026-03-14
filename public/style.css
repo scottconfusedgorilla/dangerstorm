@@ -1131,17 +1131,26 @@ header .tagline {
     border-radius: 2px;
 }
 
-.drag-handle {
-    cursor: grab;
-    color: var(--text-muted);
-    font-size: 1.1rem;
-    user-select: none;
-    padding-right: 8px;
-    line-height: 1;
+.nudge-arrows {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-right: 6px;
 }
-
-.drag-handle:active {
-    cursor: grabbing;
+.nudge-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.5rem;
+    line-height: 1;
+    padding: 2px 4px;
+    cursor: pointer;
+    opacity: 0.4;
+    transition: opacity 0.15s, color 0.15s;
+}
+.nudge-btn:hover {
+    opacity: 1;
+    color: var(--accent);
 }
 
 .idea-card-header {

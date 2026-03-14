@@ -72,7 +72,10 @@ async function loadDashboard() {
             return `
                 <div class="idea-card" data-id="${idea.id}" draggable="true">
                     <div class="idea-card-header">
-                        <span class="drag-handle" title="Drag to reorder">⠿</span>
+                        <span class="nudge-arrows">
+                            <button class="nudge-btn" onclick="nudgeIdea('${idea.id}', -1)" title="Move up">▲</button>
+                            <button class="nudge-btn" onclick="nudgeIdea('${idea.id}', 1)" title="Move down">▼</button>
+                        </span>
                         <h3 class="idea-name editable" onclick="editField(this, '${idea.id}', 'product_name')" title="Click to edit">${escapeHtml(name)}</h3>
                         <span class="idea-status ${idea.status}">${idea.status}</span>
                     </div>
@@ -326,6 +329,42 @@ function editField(el, ideaId, field) {
         if (e.key === "Enter") input.blur();
         if (e.key === "Escape") { input.value = current; input.blur(); }
     });
+}
+
+// Nudge (click to reorder)
+async function nudgeIdea(ideaId, direction) {
+    const grid = document.getElementById("ideas-grid");
+    const card = grid.querySelector(`.idea-card[data-id="${ideaId}"]`);
+    if (!card) return;
+
+    const sibling = direction === -1 ? card.previousElementSibling : card.nextElementSibling;
+    if (!sibling || !sibling.classList.contains("idea-card")) return;
+
+    // Animate the swap
+    const cardRect = card.getBoundingClientRect();
+    const sibRect = sibling.getBoundingClientRect();
+    const dy = sibRect.top - cardRect.top;
+
+    card.style.transition = "transform 0.2s ease";
+    sibling.style.transition = "transform 0.2s ease";
+    card.style.transform = `translateY(${dy}px)`;
+    sibling.style.transform = `translateY(${-dy}px)`;
+
+    await new Promise(r => setTimeout(r, 200));
+
+    card.style.transition = "";
+    card.style.transform = "";
+    sibling.style.transition = "";
+    sibling.style.transform = "";
+
+    // Move in DOM
+    if (direction === -1) {
+        grid.insertBefore(card, sibling);
+    } else {
+        grid.insertBefore(sibling, card);
+    }
+
+    saveOrder(grid);
 }
 
 // Drag and drop sorting
