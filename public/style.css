@@ -942,8 +942,8 @@ header .tagline {
 }
 
 /* Dashboard */
-/* Dashboard: #app scrolls, header+search stick */
-#app:has(#dashboard-container) {
+/* Dashboard: viewport scrolls, header+search stick */
+html:has(#dashboard-container) {
     height: 100vh;
     height: 100dvh;
     overflow-y: auto;

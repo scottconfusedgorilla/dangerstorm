@@ -368,7 +368,7 @@ async function nudgeIdea(ideaId, direction) {
     }
 
     const newTop = card.getBoundingClientRect().top;
-    const scrollEl = document.getElementById("app") || document.documentElement;
+    const scrollEl = document.documentElement;
     scrollEl.scrollTop += (newTop - oldTop);
 
     saveOrder(grid);
