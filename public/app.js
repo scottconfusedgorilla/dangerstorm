@@ -472,6 +472,14 @@ function applyExtrasPrefs() {
     // Show the toggles row if outputs are visible
     const togglesEl = document.getElementById("extras-toggles");
     if (togglesEl) togglesEl.classList.toggle("hidden", outputsContainer.classList.contains("hidden"));
+
+    // Show "Generate Extras" button if any extras are missing content
+    const genBtn = document.getElementById("generate-extras-btn");
+    if (genBtn) {
+        const hasAll = ["output-2-content", "output-3-content", "output-6-content"]
+            .every(id => document.getElementById(id)?.textContent.trim());
+        genBtn.classList.toggle("hidden", hasAll || outputsContainer.classList.contains("hidden"));
+    }
 }
 
 function toggleExtra(blockId, checked, prefKey) {
@@ -484,6 +492,75 @@ function toggleExtra(blockId, checked, prefKey) {
     const content = block.querySelector(".output-content");
     const hasContent = content && content.textContent.trim();
     block.classList.toggle("hidden", !checked || !hasContent);
+}
+
+async function generateExtras() {
+    const deckPrompt = document.getElementById("output-1-content").textContent.trim();
+    if (!deckPrompt) return;
+
+    const btn = document.getElementById("generate-extras-btn");
+    if (btn) { btn.disabled = true; btn.textContent = "Generating..."; }
+
+    try {
+        const resp = await fetch("/api/generate-extras", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ deckPrompt }),
+        });
+
+        let fullText = "";
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            for (const line of chunk.split("\n")) {
+                if (!line.startsWith("data: ")) continue;
+                try {
+                    const data = JSON.parse(line.slice(6));
+                    if (data.text) fullText += data.text;
+                } catch {}
+            }
+        }
+
+        // Parse the extras outputs
+        const extract = (tag) => {
+            const re = new RegExp(`===${tag}_START===\\s*([\\s\\S]*?)\\s*===${tag}_END===`);
+            const m = fullText.match(re);
+            return m ? m[1].trim() : "";
+        };
+
+        const output2 = extract("OUTPUT_2");
+        const output3 = extract("OUTPUT_3");
+        const output6 = extract("OUTPUT_6");
+
+        if (output2) document.getElementById("output-2-content").textContent = output2;
+        if (output3) document.getElementById("output-3-content").textContent = output3;
+        if (output6) document.getElementById("output-6-content").textContent = output6;
+
+        // Turn on all toggles and show the blocks
+        const prefs = { carrd: true, kit: true, build: true };
+        saveExtrasPrefs(prefs);
+        applyExtrasPrefs();
+
+        // Auto-save if we have an idea ID
+        if (currentIdeaId) {
+            const outputs = {
+                output1: document.getElementById("output-1-content").textContent,
+                output2, output3,
+                output4: document.getElementById("output-4-content").textContent,
+                output6,
+            };
+            await saveIdea(currentDomain, currentProductName, currentTagline, conversationHistory, outputs, true, currentIdeaId);
+        }
+    } catch (err) {
+        console.error("Generate extras failed:", err);
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "Generate Extras"; }
+        applyExtrasPrefs();
+    }
 }
 
 async function sendMessage() {

@@ -735,12 +735,9 @@ header .tagline {
 }
 
 .generate-extras-btn {
-    display: block;
-    width: 100%;
-    padding: 14px 24px;
-    font-size: 1rem;
-    margin-bottom: 24px;
-    text-align: center;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    margin-left: auto;
 }
 
 .generate-extras-btn:disabled {
@@ -873,7 +870,7 @@ header .tagline {
 
 .icon-btn:hover { opacity: 0.75; }
 
-.icon-btn.claude-btn { background: #2A2A2A; }
+.icon-btn.claude-btn { background: #D97757; color: #fff; font-weight: 700; font-size: 0.7rem; }
 .icon-btn.research-btn { background: #22C55E; color: #fff; font-weight: 700; font-size: 0.7rem; }
 .icon-btn.godaddy-btn { background: #00A4A6; }
 .icon-btn.carrd-btn { background: #4F46E5; color: #fff; }
