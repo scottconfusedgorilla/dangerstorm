@@ -609,15 +609,6 @@ def save_idea():
         if is_new and idea_count >= max_ideas:
             return jsonify({"error": f"Idea limit reached ({max_ideas}). Upgrade to Pro for more."}), 403
 
-        # If domain already exists and not forcing, return conflict
-        if not is_new and not force:
-            return jsonify({
-                "conflict": True,
-                "existingId": existing.data[0]["id"],
-                "existingName": existing.data[0]["product_name"],
-                "domain": domain,
-            }), 409
-
         # Determine status based on whether outputs are present
         has_outputs = bool(outputs.get("output1"))
         idea_status = "complete" if has_outputs else "draft"
