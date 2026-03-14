@@ -72,13 +72,15 @@ async function loadDashboard() {
             return `
                 <div class="idea-card" data-id="${idea.id}" draggable="true">
                     <div class="idea-card-header">
-                        <span class="drag-handle" title="Drag to reorder">⠿</span>
-                        <span class="nudge-arrows">
-                            <button class="nudge-btn" onclick="nudgeIdea('${idea.id}', -1)" title="Move up">▲</button>
-                            <button class="nudge-btn" onclick="nudgeIdea('${idea.id}', 1)" title="Move down">▼</button>
-                        </span>
                         <h3 class="idea-name editable" onclick="editField(this, '${idea.id}', 'product_name')" title="Click to edit">${escapeHtml(name)}</h3>
                         <span class="idea-status ${idea.status}">${idea.status}</span>
+                        <span class="reorder-controls">
+                            <span class="nudge-arrows">
+                                <button class="nudge-btn" onclick="nudgeIdea('${idea.id}', -1)" title="Move up">▲</button>
+                                <button class="nudge-btn" onclick="nudgeIdea('${idea.id}', 1)" title="Move down">▼</button>
+                            </span>
+                            <span class="drag-handle" title="Drag to reorder">⠿</span>
+                        </span>
                     </div>
                     <div class="idea-domain-row">
                         <p class="idea-domain editable" onclick="editField(this, '${idea.id}', 'domain')" title="Click to edit">${escapeHtml(domain)}</p>
