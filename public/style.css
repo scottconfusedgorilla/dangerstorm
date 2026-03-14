@@ -944,6 +944,7 @@ header .tagline {
 /* Dashboard */
 /* #app is scroll container (sticky works) but full-width (scrollbar at viewport edge) */
 #app:has(#dashboard-container) {
+    display: block;
     max-width: none;
     height: 100vh;
     height: 100dvh;
