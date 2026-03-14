@@ -263,7 +263,7 @@ function escapeHtml(text) {
 }
 
 function escapeAttr(text) {
-    return escapeHtml(text).replace(/'/g, "&#39;");
+    return escapeHtml(text).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
 }
 
 // Search / filter
