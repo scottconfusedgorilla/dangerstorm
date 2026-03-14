@@ -972,7 +972,7 @@ header .tagline {
     padding-top: 16px;
     padding-bottom: 8px;
     position: sticky;
-    top: 60px;
+    top: 80px;
     z-index: 40;
     background: var(--bg);
 }
