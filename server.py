@@ -601,10 +601,9 @@ def save_idea():
                 existing = check
             else:
                 existing = type('', (), {'data': []})()
-        elif domain and not domain.startswith("none-"):
-            existing = sb.table("ideas").select("id, product_name").eq("user_id", user_id).eq("domain", domain).neq("status", "trash").execute()
         else:
-            existing = type('', (), {'data': []})()  # empty result
+            # No existing ID — always create a new idea
+            existing = type('', (), {'data': []})()
         is_new = len(existing.data) == 0
 
         if is_new and idea_count >= max_ideas:
