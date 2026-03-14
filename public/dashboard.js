@@ -358,17 +358,18 @@ async function nudgeIdea(ideaId, direction) {
     sibling.style.transition = "";
     sibling.style.transform = "";
 
-    // Move in DOM
+    // Move in DOM and scroll to keep card under cursor
+    const oldTop = card.getBoundingClientRect().top;
+
     if (direction === -1) {
         grid.insertBefore(card, sibling);
     } else {
         grid.insertBefore(sibling, card);
     }
 
-    // Re-focus the same nudge button so user can click repeatedly
-    const btnIndex = direction === -1 ? 0 : 1;
-    const btn = card.querySelectorAll(".nudge-btn")[btnIndex];
-    if (btn) btn.focus();
+    const newTop = card.getBoundingClientRect().top;
+    const scrollEl = document.getElementById("app") || document.documentElement;
+    scrollEl.scrollTop += (newTop - oldTop);
 
     saveOrder(grid);
 }
