@@ -952,6 +952,8 @@ header .tagline {
 }
 /* Constrain dashboard content to 720px centered */
 #app:has(#dashboard-container) > header,
+#app:has(#dashboard-container) > .dashboard-header,
+#app:has(#dashboard-container) > .idea-count,
 #app:has(#dashboard-container) > #dashboard-container {
     max-width: 720px;
     width: 100%;
@@ -960,19 +962,19 @@ header .tagline {
 }
 
 #dashboard-container {
-    padding: 16px 0 32px;
+    padding: 0 0 32px;
 }
 
 .dashboard-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    padding-top: 16px;
+    padding-bottom: 8px;
     position: sticky;
     top: 60px;
     z-index: 40;
     background: var(--bg);
-    padding-bottom: 8px;
 }
 
 /* Portfolio overlay */
