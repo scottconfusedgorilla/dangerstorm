@@ -638,8 +638,6 @@ def save_idea():
         else:
             idea_id = existing.data[0]["id"]
             sb.table("ideas").update({
-                "domain": domain,
-                "product_name": product_name,
                 "tagline": tagline,
                 "status": idea_status,
                 "updated_at": "now()",
