@@ -547,13 +547,18 @@ async function generateExtras() {
 
         // Auto-save if we have an idea ID
         if (currentIdeaId) {
+            const deckText = document.getElementById("output-1-content").textContent;
+            const domainMatch = deckText.match(/domain[:\s]+([a-z0-9.-]+\.[a-z]{2,})/i);
+            const nameMatch = deckText.match(/product\s*name[:\s]+([^\n]+)/i);
+            const domain = domainMatch ? domainMatch[1] : "None";
+            const productName = nameMatch ? nameMatch[1].trim().replace(/\*+/g, "") : "Untitled Idea";
             const outputs = {
-                output1: document.getElementById("output-1-content").textContent,
+                output1: deckText,
                 output2, output3,
                 output4: document.getElementById("output-4-content").textContent,
                 output6,
             };
-            await saveIdea(currentDomain, currentProductName, currentTagline, conversationHistory, outputs, true, currentIdeaId);
+            await saveIdea(domain, productName, currentSummary || "", conversationHistory, outputs, true, currentIdeaId);
         }
     } catch (err) {
         console.error("Generate extras failed:", err);
