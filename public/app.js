@@ -509,6 +509,7 @@ async function generateExtras() {
         });
 
         let fullText = "";
+        let extrasServerOutputs = null;
         const reader = resp.body.getReader();
         const decoder = new TextDecoder();
 
@@ -521,20 +522,27 @@ async function generateExtras() {
                 try {
                     const data = JSON.parse(line.slice(6));
                     if (data.text) fullText += data.text;
+                    if (data.done && data.outputs) extrasServerOutputs = data.outputs;
                 } catch {}
             }
         }
 
-        // Parse the extras outputs
-        const extract = (tag) => {
-            const re = new RegExp(`===${tag}_START===\\s*([\\s\\S]*?)\\s*===${tag}_END===`);
-            const m = fullText.match(re);
-            return m ? m[1].trim() : "";
-        };
-
-        const output2 = extract("OUTPUT_2");
-        const output3 = extract("OUTPUT_3");
-        const output6 = extract("OUTPUT_6");
+        // Use server-parsed outputs if available, fall back to client-side regex
+        let output2, output3, output6;
+        if (extrasServerOutputs) {
+            output2 = extrasServerOutputs.output2 || "";
+            output3 = extrasServerOutputs.output3 || "";
+            output6 = extrasServerOutputs.output6 || "";
+        } else {
+            const extract = (tag) => {
+                const re = new RegExp(`===${tag}_START===\\s*([\\s\\S]*?)\\s*===${tag}_END===`);
+                const m = fullText.match(re);
+                return m ? m[1].trim() : "";
+            };
+            output2 = extract("OUTPUT_2");
+            output3 = extract("OUTPUT_3");
+            output6 = extract("OUTPUT_6");
+        }
 
         if (output2) document.getElementById("output-2-content").textContent = output2;
         if (output3) document.getElementById("output-3-content").textContent = output3;
@@ -646,6 +654,7 @@ async function sendMessage() {
 
         const msgDiv = addMessage("assistant", "");
         let fullText = "";
+        let serverOutputs = null;
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -674,6 +683,8 @@ async function sendMessage() {
                         }
                         if (data.done) {
                             console.log("Stream complete:", data);
+                            // Server provides parsed outputs — prefer over client-side regex
+                            if (data.outputs) serverOutputs = data.outputs;
                         }
                         if (data.error) {
                             console.error("Stream error:", data.error);
@@ -689,9 +700,9 @@ async function sendMessage() {
         conversationHistory.push({ role: "assistant", content: fullText });
         saveSession();
 
-        // Check if outputs were generated
-        const parsed = parseOutputs(fullText);
-        if (parsed.hasOutputs) {
+        // Use server-parsed outputs if available, fall back to client-side parsing
+        const parsed = serverOutputs || parseOutputs(fullText);
+        if (parsed.hasOutputs || (parsed.output1 && parsed.output1.length > 0)) {
             // Update message to show only conversational text
             msgDiv.textContent = parsed.conversationText || "Here are your outputs:";
             showOutputs(parsed.output1, parsed.output2, parsed.output3, parsed.output4, parsed.output5, parsed.output6);

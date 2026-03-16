@@ -19,6 +19,7 @@ from utils import (
     idea_limit_reached,
     max_ideas_for_tier,
     parse_forwarded_ip,
+    parse_output_markers,
     sanitize_domain,
     strip_code_fences,
     strip_null_bytes,
@@ -322,6 +323,7 @@ def chat_stream():
     def generate():
         import time
         token_count = 0
+        full_text = []
         try:
             print(f"[stream] Starting chat stream, {len(api_messages)} messages", flush=True)
             with client.messages.stream(
@@ -332,14 +334,19 @@ def chat_stream():
             ) as stream:
                 for text in stream.text_stream:
                     token_count += 1
+                    full_text.append(text)
                     yield f"data: {json.dumps({'text': text})}\n\n"
-            # Send stop reason so frontend can detect truncation
+            # Send stop reason + server-parsed outputs so frontend doesn't need its own regex
+            # Output parsing tested in tests/test_utils.py::TestParseOutputMarkers
             msg = stream.get_final_message()
             stop = msg.stop_reason if msg else "unknown"
             usage = msg.usage if msg else None
             meta = {"done": True, "stop_reason": stop}
             if usage:
                 meta["output_tokens"] = usage.output_tokens
+            parsed = parse_output_markers("".join(full_text))
+            if parsed["hasOutputs"]:
+                meta["outputs"] = {k: v for k, v in parsed.items() if k != "hasOutputs"}
             print(f"[stream] Completed: stop_reason={stop}, tokens={usage.output_tokens if usage else 'unknown'}", flush=True)
             yield f"data: {json.dumps(meta)}\n\n"
         except anthropic.APIError as e:
@@ -399,6 +406,7 @@ def generate_extras():
         return jsonify({"error": "No deck prompt provided"}), 400
 
     def generate():
+        full_text = []
         try:
             with client.messages.stream(
                 model="claude-sonnet-4-6",
@@ -407,8 +415,14 @@ def generate_extras():
                 messages=[{"role": "user", "content": f"Generate all three additional outputs for this product based on the following deck prompt:\n\n{deck_prompt}"}],
             ) as stream:
                 for text in stream.text_stream:
+                    full_text.append(text)
                     yield f"data: {json.dumps({'text': text})}\n\n"
-            yield "data: {\"done\": true}\n\n"
+            # Include server-parsed outputs in done message
+            parsed = parse_output_markers("".join(full_text))
+            meta = {"done": True}
+            if parsed["output2"] or parsed["output3"] or parsed["output6"]:
+                meta["outputs"] = {k: v for k, v in parsed.items() if k != "hasOutputs"}
+            yield f"data: {json.dumps(meta)}\n\n"
         except anthropic.APIError as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
