@@ -1,12 +1,24 @@
 import os
 import time
-import uuid as uuid_module
 from collections import defaultdict
 from functools import wraps
 from flask import Flask, request, jsonify, send_from_directory, Response, make_response
 from dotenv import load_dotenv
 import anthropic
 import json
+
+# ── Utility functions (testable primitives) ───────────────────
+# Logic extracted to utils.py. Tested in tests/test_utils.py and tests/test_contracts.py.
+from utils import (
+    ANON_DAILY_LIMIT,
+    check_anon_limit as _check_anon_limit_pure,
+    idea_limit_reached,
+    max_ideas_for_tier,
+    parse_forwarded_ip,
+    sanitize_domain,
+    strip_code_fences,
+    strip_null_bytes,
+)
 
 load_dotenv(override=True)
 
@@ -67,33 +79,30 @@ STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "")
 
-# Anonymous rate limiting
-ANON_DAILY_LIMIT = 3
+# Anonymous rate limiting (ANON_DAILY_LIMIT imported from utils)
 anonymous_usage = defaultdict(list)  # { "ip:cookie": [timestamp, ...] }
 
 
 def get_anon_identifier(req):
     """Build identifier from IP + cookie UUID."""
-    ip = req.headers.get("X-Forwarded-For", req.remote_addr)
-    if ip and "," in ip:
-        ip = ip.split(",")[0].strip()
+    # IP parsing tested in tests/test_utils.py::TestParseForwardedIp
+    ip = parse_forwarded_ip(req.headers.get("X-Forwarded-For")) or req.remote_addr
     cookie = req.cookies.get("ds_anon", "")
     return f"{ip}:{cookie}", ip, cookie
 
 
 def check_anon_limit(req):
     """Check if anonymous user has remaining conversations. Returns (allowed, remaining, identifier, cookie)."""
+    import uuid as uuid_module
     ident, ip, cookie = get_anon_identifier(req)
     if not cookie:
         cookie = uuid_module.uuid4().hex
         ident = f"{ip}:{cookie}"
     now = time.time()
-    cutoff = now - 86400  # 24 hours
-    # Prune old entries
-    anonymous_usage[ident] = [t for t in anonymous_usage[ident] if t > cutoff]
-    used = len(anonymous_usage[ident])
-    remaining = max(0, ANON_DAILY_LIMIT - used)
-    return used < ANON_DAILY_LIMIT, remaining, ident, cookie
+    # Rate limit logic tested in tests/test_utils.py::TestCheckAnonLimit
+    allowed, remaining, pruned = _check_anon_limit_pure(anonymous_usage[ident], now)
+    anonymous_usage[ident] = pruned
+    return allowed, remaining, ident, cookie
 
 SYSTEM_PROMPT = """You are DangerStorm — a confident, direct, product-savvy AI that helps people turn product ideas into professional pitch deck prompts in under 90 seconds.
 
@@ -267,9 +276,7 @@ def chat_stream():
                     latest_user_msg = content
                 break
         if latest_user_msg:
-            ip_address = request.headers.get("X-Forwarded-For", request.remote_addr)
-            if ip_address and "," in ip_address:
-                ip_address = ip_address.split(",")[0].strip()
+            ip_address = parse_forwarded_ip(request.headers.get("X-Forwarded-For")) or request.remote_addr
             # Look up user_id from email if available
             user_id = None
             if user_email:
@@ -501,12 +508,9 @@ def generate_ppt():
             messages=[{"role": "user", "content": deck_prompt}],
         )
 
-        raw = response.content[0].text.strip()
-        # Strip markdown code fences if present
-        if raw.startswith("```"):
-            raw = raw.split("\n", 1)[1]
-            if raw.endswith("```"):
-                raw = raw[:-3].strip()
+        raw = response.content[0].text
+        # Code fence stripping tested in tests/test_utils.py::TestStripCodeFences
+        raw = strip_code_fences(raw)
 
         slide_data = json.loads(raw)
         return jsonify(slide_data)
@@ -520,9 +524,8 @@ def generate_ppt():
 @app.route("/api/session-info")
 def session_info():
     """Return the client's IP address for transparency display."""
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-    if ip and "," in ip:
-        ip = ip.split(",")[0].strip()
+    # IP parsing tested in tests/test_utils.py::TestParseForwardedIp
+    ip = parse_forwarded_ip(request.headers.get("X-Forwarded-For")) or request.remote_addr
     return jsonify({"ip": ip or "unknown"})
 
 
@@ -552,28 +555,18 @@ def view_idea(user_id, idea_id):
     return send_from_directory("public", "index.html")
 
 
-def strip_null_bytes(obj):
-    """Recursively strip \u0000 from strings — PostgreSQL text columns reject them."""
-    if isinstance(obj, str):
-        return obj.replace("\x00", "")
-    if isinstance(obj, dict):
-        return {k: strip_null_bytes(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [strip_null_bytes(v) for v in obj]
-    return obj
+# strip_null_bytes imported from utils — tested in tests/test_utils.py::TestStripNullBytes
 
 
 @app.route("/api/save-idea", methods=["POST"])
 @require_auth
 def save_idea():
     try:
+        # Sanitization tested in tests/test_utils.py::TestStripNullBytes
         data = strip_null_bytes(request.json)
         user_id = request.user.id
-        domain = data.get("domain", "None") or "None"
-        # Ensure domainless ideas get unique placeholder to avoid unique constraint collision
-        if domain == "None":
-            import uuid
-            domain = f"none-{uuid.uuid4().hex[:8]}"
+        # Domain sanitization tested in tests/test_utils.py::TestDomainHelpers
+        domain, _ = sanitize_domain(data.get("domain", "None"))
         product_name = data.get("productName", "Untitled Idea")
         tagline = data.get("tagline", "")
         conversation = data.get("conversation", [])
@@ -588,7 +581,6 @@ def save_idea():
 
         tier = profile.data["tier"]
         idea_count = profile.data["idea_count"]
-        max_ideas = 99 if tier in ("pro", "pioneer") else 19
 
         # If client already knows the idea ID, use it directly (re-save)
         existing_idea_id = data.get("existingIdeaId")
@@ -606,8 +598,9 @@ def save_idea():
             existing = type('', (), {'data': []})()
         is_new = len(existing.data) == 0
 
-        if is_new and idea_count >= max_ideas:
-            return jsonify({"error": f"Idea limit reached ({max_ideas}). Upgrade to Pro for more."}), 403
+        # Idea limit tested in tests/test_utils.py::TestIdeaLimits
+        if is_new and idea_limit_reached(idea_count, tier):
+            return jsonify({"error": f"Idea limit reached ({max_ideas_for_tier(tier)}). Upgrade to Pro for more."}), 403
 
         # Determine status based on whether outputs are present
         has_outputs = bool(outputs.get("output1"))
@@ -677,17 +670,16 @@ def branch_idea():
         sb = get_supabase()
         user_id = request.user.id
 
-        # Check idea limit
+        # Check idea limit (tested in tests/test_utils.py::TestIdeaLimits)
         profile = sb.table("profiles").select("tier, idea_count").eq("id", user_id).single().execute()
         if not profile.data:
             return jsonify({"error": "Profile not found"}), 404
 
         tier = profile.data["tier"]
         idea_count = profile.data["idea_count"]
-        max_ideas = 99 if tier in ("pro", "pioneer") else 19
 
-        if idea_count >= max_ideas:
-            return jsonify({"error": f"Idea limit reached ({max_ideas}). Upgrade to Pro for more."}), 403
+        if idea_limit_reached(idea_count, tier):
+            return jsonify({"error": f"Idea limit reached ({max_ideas_for_tier(tier)}). Upgrade to Pro for more."}), 403
 
         # Get the source idea
         source = sb.table("ideas").select("*").eq("id", idea_id).eq("user_id", user_id).single().execute()
@@ -701,9 +693,8 @@ def branch_idea():
 
         latest = versions.data[0]
 
-        # Create unique domain for the branch
-        import uuid
-        branch_domain = f"none-{uuid.uuid4().hex[:8]}"
+        # Domain generation tested in tests/test_utils.py::TestDomainHelpers
+        branch_domain, _ = sanitize_domain(None)
 
         # Bump sort_order so branch lands at top
         existing_ideas = sb.table("ideas").select("id, sort_order").eq("user_id", user_id).neq("status", "trash").execute()

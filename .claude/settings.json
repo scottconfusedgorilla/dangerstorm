@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"https://detfoqtvhrmbizzdzenb.supabase.co/rest/v1/profiles?select=id,email,tier,created_at\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRldGZvcXR2aHJtYml6emR6ZW5iIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzA2NzgzOSwiZXhwIjoyMDg4NjQzODM5fQ.XK49zMXLuMRpt1_gCs_F1-oKpjy8lI--Y1c8UAFvEyw\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRldGZvcXR2aHJtYml6emR6ZW5iIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzA2NzgzOSwiZXhwIjoyMDg4NjQzODM5fQ.XK49zMXLuMRpt1_gCs_F1-oKpjy8lI--Y1c8UAFvEyw\")"
+    ],
+    "additionalDirectories": []
+  }
+}

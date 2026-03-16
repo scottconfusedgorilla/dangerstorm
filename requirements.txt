@@ -4,3 +4,4 @@ python-dotenv==1.2.1
 gunicorn==25.1.0
 supabase==2.15.2
 stripe==12.2.0
+pytest==8.3.5
