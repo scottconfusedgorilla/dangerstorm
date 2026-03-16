@@ -202,6 +202,44 @@ You have ALREADY said your opener: "Alright, hit me. What's the product? Give me
 The user's first message is their response to that opener. Do NOT repeat the opener. Continue the conversation from there.
 """
 
+HELP_SYSTEM_PROMPT = """You are DangerStorm's built-in help assistant. You help users understand how to use DangerStorm effectively.
+
+## ABOUT DANGERSTORM
+DangerStorm is a conversational tool that takes a product idea and a domain name and generates a professional product pitch deck prompt in under 90 seconds. Users paste the prompt into Claude or ChatGPT to produce a polished 8-slide pitch deck.
+
+## HOW IT WORKS
+1. The user types their product idea and domain name in the chat
+2. DangerStorm asks 3-5 follow-up questions (one at a time) to understand the product
+3. Once it has enough info, it generates multiple outputs:
+   - **Pitch Deck Prompt** — paste into any AI to get a professional 8-slide deck
+   - **Intro Pitch** — a one-paragraph elevator pitch
+   - **Carrd Landing Page Copy** — ready-to-paste copy for a one-page website
+   - **Kit Signup Form Copy** — email signup form text
+   - **Build Prompt** — instructions for Claude Code to build an MVP
+
+## KEY FEATURES
+- **Save Ideas** — sign in to save your ideas to a personal dashboard
+- **Refine** — after outputs are generated, click "Refine" to re-enter the conversation and adjust
+- **Branch** — create a variation of an existing idea
+- **Download All** — download all outputs as a zip file
+- **Attach Files** — attach images or documents for context (e.g., competitor screenshots)
+- **Free tier** — 3 conversations without signing in; unlimited with a free account
+
+## TIPS FOR GREAT RESULTS
+- Be specific about what makes your product different — that's the heart of Slide 3
+- Have a domain in mind (even if you haven't bought it yet)
+- If DangerStorm asks a question you've already answered, just say "I already told you" and it'll adapt
+- The more concrete your elevator pitch, the fewer follow-up questions needed
+- You can paste the deck prompt into Claude, ChatGPT, or any AI to generate the actual slides
+
+## YOUR BEHAVIOR
+- Be friendly, concise, and helpful
+- Answer questions about DangerStorm's features, workflow, and tips
+- If the user asks something unrelated to DangerStorm, gently redirect: "I'm DangerStorm's help assistant — I can help you with using DangerStorm! For your product idea, just close this help panel and start chatting."
+- Keep answers short — 2-4 sentences max unless they ask for detail
+- Use a warm, approachable tone (not the aggressive product-strategist voice of the main chat)
+"""
+
 
 @app.route("/")
 def index():
@@ -245,6 +283,7 @@ def chat_stream():
     data = request.json
     messages = data.get("messages", [])
     user_email = data.get("userEmail", "")
+    chat_mode = data.get("mode", "pitch")  # "pitch" or "help"
 
     if not messages:
         return jsonify({"error": "No messages provided"}), 400
@@ -258,7 +297,7 @@ def chat_stream():
             is_authenticated = True
 
     anon_cookie = None
-    if not is_authenticated:
+    if not is_authenticated and chat_mode != "help":
         # Count new conversations only (first user message = messages has opener + 1 user msg)
         user_msg_count = sum(1 for m in messages if m.get("role") == "user")
         if user_msg_count <= 1:
@@ -269,53 +308,56 @@ def chat_stream():
             # Record this new conversation
             anonymous_usage[ident].append(time.time())
 
-    # Log the latest user prompt with IP address for patent/IP documentation
-    try:
-        latest_user_msg = None
-        for msg in reversed(messages):
-            if msg.get("role") == "user":
-                content = msg.get("content", "")
-                if isinstance(content, list):
-                    latest_user_msg = " ".join(p.get("text", "") for p in content if p.get("type") == "text")
-                else:
-                    latest_user_msg = content
-                break
-        if latest_user_msg:
-            ip_address = parse_forwarded_ip(request.headers.get("X-Forwarded-For")) or request.remote_addr
-            # Look up user_id from email if available
-            user_id = None
-            if user_email:
-                try:
-                    sb = get_supabase()
-                    profile = sb.table("profiles").select("id").eq("email", user_email).limit(1).execute()
-                    if profile.data:
-                        user_id = profile.data[0]["id"]
-                except Exception:
-                    pass
-            sb = get_supabase()
-            sb.table("prompt_log").insert({
-                "user_id": user_id,
-                "user_email": user_email or None,
-                "ip_address": ip_address or "unknown",
-                "prompt_text": latest_user_msg[:10000],  # cap at 10k chars
-            }).execute()
-    except Exception as e:
-        print(f"[prompt-log] Failed to log prompt: {e}", flush=True)
+    # Log the latest user prompt with IP address for patent/IP documentation (skip help mode)
+    if chat_mode != "help":
+        try:
+            latest_user_msg = None
+            for msg in reversed(messages):
+                if msg.get("role") == "user":
+                    content = msg.get("content", "")
+                    if isinstance(content, list):
+                        latest_user_msg = " ".join(p.get("text", "") for p in content if p.get("type") == "text")
+                    else:
+                        latest_user_msg = content
+                    break
+            if latest_user_msg:
+                ip_address = parse_forwarded_ip(request.headers.get("X-Forwarded-For")) or request.remote_addr
+                user_id = None
+                if user_email:
+                    try:
+                        sb = get_supabase()
+                        profile = sb.table("profiles").select("id").eq("email", user_email).limit(1).execute()
+                        if profile.data:
+                            user_id = profile.data[0]["id"]
+                    except Exception:
+                        pass
+                sb = get_supabase()
+                sb.table("prompt_log").insert({
+                    "user_id": user_id,
+                    "user_email": user_email or None,
+                    "ip_address": ip_address or "unknown",
+                    "prompt_text": latest_user_msg[:10000],
+                }).execute()
+        except Exception as e:
+            print(f"[prompt-log] Failed to log prompt: {e}", flush=True)
 
-    # Build system prompt, injecting user email context if available
-    system = SYSTEM_PROMPT
-    if user_email:
-        system += f"\n\n## USER CONTEXT:\nThe user's email is {user_email}. Use this as the default contact email for the deck slides unless they specify otherwise."
-
-    # Ensure messages alternate correctly for the API.
-    # The frontend sends the hardcoded opener as an assistant message first,
-    # so we strip it and include it via system prompt context instead.
-    api_messages = []
-    for msg in messages:
-        if not api_messages and msg["role"] == "assistant":
-            # Skip the leading assistant message — it's the hardcoded opener
-            continue
-        api_messages.append(msg)
+    # Build system prompt based on mode
+    if chat_mode == "help":
+        system = HELP_SYSTEM_PROMPT
+        api_messages = [m for m in messages if m.get("role") in ("user", "assistant")]
+    else:
+        system = SYSTEM_PROMPT
+        if user_email:
+            system += f"\n\n## USER CONTEXT:\nThe user's email is {user_email}. Use this as the default contact email for the deck slides unless they specify otherwise."
+        # Ensure messages alternate correctly for the API.
+        # The frontend sends the hardcoded opener as an assistant message first,
+        # so we strip it and include it via system prompt context instead.
+        api_messages = []
+        for msg in messages:
+            if not api_messages and msg["role"] == "assistant":
+                # Skip the leading assistant message — it's the hardcoded opener
+                continue
+            api_messages.append(msg)
 
     if not api_messages:
         return jsonify({"error": "No user message provided"}), 400
@@ -326,9 +368,10 @@ def chat_stream():
         full_text = []
         try:
             print(f"[stream] Starting chat stream, {len(api_messages)} messages", flush=True)
+            help_mode = chat_mode == "help"
             with client.messages.stream(
-                model="claude-sonnet-4-6",
-                max_tokens=16000,
+                model="claude-haiku-4-5-20251001" if help_mode else "claude-sonnet-4-6",
+                max_tokens=1000 if help_mode else 16000,
                 system=system,
                 messages=api_messages,
             ) as stream:
