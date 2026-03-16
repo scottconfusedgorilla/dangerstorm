@@ -805,6 +805,15 @@ async function doSaveIdea(btn) {
     try {
         const result = await saveIdea(domain, productName, tagline, conversationHistory, outputs, false, currentIdeaId);
 
+        // Handle trashed idea
+        if (result.trashed) {
+            showSaveStatus('This idea was moved to trash. <a href="/dashboard" style="color:inherit;text-decoration:underline;">Restore it from your Dashboard</a> to continue editing.', "error");
+            currentIdeaId = null; // Clear so next save creates a fresh idea
+            btn.disabled = false;
+            btn.textContent = origText;
+            return;
+        }
+
         // Handle domain conflict
         if (result.conflict) {
             const action = await dsConfirm(

@@ -17,6 +17,7 @@ async function saveIdea(domain, productName, tagline, conversation, outputs, for
 
     const data = await response.json();
     if (response.status === 409 && data.conflict) return data; // domain conflict
+    if (response.status === 410) return { trashed: true }; // idea was trashed
     if (!response.ok) throw new Error(data.error || "Failed to save idea");
     return data;
 }
