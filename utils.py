@@ -112,27 +112,35 @@ def sanitize_domain(domain):
 # ── Save-flow decision logic ──────────────────────────────────
 
 
-def classify_save_request(existing_idea_id, check_data):
-    """Determine whether a save request is a new idea or an update.
+def classify_save_request(existing_idea_id, check_data, trashed_check_data=None):
+    """Determine whether a save request is a new idea, update, or error.
 
     The server queries for existing_idea_id (matching user_id, not trashed).
-    This function interprets the result.
+    If not found, a second query checks whether the idea exists but is trashed.
 
     Args:
         existing_idea_id: The idea ID sent by the client, or None.
-        check_data: List of matching rows from the ownership query.
+        check_data: List of matching rows from the active-ideas ownership query.
             Each row is a dict with at least "id".
+        trashed_check_data: List of matching rows from a trashed-ideas query,
+            or None if not checked. Used to distinguish "trashed" from
+            "wrong user / doesn't exist".
 
     Returns:
-        (is_new, idea_id) where is_new=True means create a new idea,
-        and idea_id is the existing idea's ID (or None if new).
+        (status, idea_id) where status is one of:
+        - "new"     — create a new idea (idea_id is None)
+        - "update"  — update the existing idea (idea_id is the DB row ID)
+        - "trashed" — idea exists but is trashed (idea_id is None)
     """
     if not existing_idea_id:
-        return True, None
+        return "new", None
     if check_data and len(check_data) > 0:
-        return False, check_data[0]["id"]
-    # existingIdeaId was provided but not found (trashed, wrong user, etc.)
-    return True, None
+        return "update", check_data[0]["id"]
+    # existingIdeaId was provided but not found in active ideas
+    if trashed_check_data and len(trashed_check_data) > 0:
+        return "trashed", None
+    # Not found at all (wrong user, deleted, etc.) — treat as new
+    return "new", None
 
 
 def determine_idea_status(outputs):
@@ -152,6 +160,26 @@ def determine_idea_status(outputs):
     if bool(outputs.get("output1")):
         return "complete"
     return "draft"
+
+
+def resolve_idea_status(outputs, current_status=None):
+    """Determine the status for a save, preventing regression on re-save.
+
+    For new ideas (current_status is None), this is the same as
+    determine_idea_status. For updates, status can only upgrade
+    (draft → complete), never downgrade (complete → draft).
+
+    Args:
+        outputs: Dict of outputs from this save.
+        current_status: The idea's current status in the DB, or None for new ideas.
+
+    Returns:
+        "complete" or "draft".
+    """
+    new_status = determine_idea_status(outputs)
+    if current_status == "complete" and new_status == "draft":
+        return "complete"
+    return new_status
 
 
 def compute_next_version(versions_data):

@@ -10,6 +10,7 @@ from utils import (
     compute_next_version,
     determine_idea_status,
     idea_limit_reached,
+    resolve_idea_status,
 )
 
 
@@ -17,48 +18,55 @@ from utils import (
 
 
 class TestClassifySaveRequest:
-    """Decide new-vs-update based on existingIdeaId and ownership query result."""
+    """Decide new-vs-update-vs-trashed based on existingIdeaId and query results."""
 
     def test_no_existing_id_is_new(self):
         """No existingIdeaId → always a new idea."""
-        is_new, idea_id = classify_save_request(None, [])
-        assert is_new is True
+        status, idea_id = classify_save_request(None, [])
+        assert status == "new"
         assert idea_id is None
 
     def test_empty_string_existing_id_is_new(self):
         """Empty string existingIdeaId → treated as new (falsy)."""
-        is_new, idea_id = classify_save_request("", [])
-        assert is_new is True
+        status, idea_id = classify_save_request("", [])
+        assert status == "new"
         assert idea_id is None
 
     def test_valid_existing_id_with_match(self):
         """existingIdeaId found in DB for this user → update, not new."""
         check_data = [{"id": "abc-123", "product_name": "My Idea"}]
-        is_new, idea_id = classify_save_request("abc-123", check_data)
-        assert is_new is False
+        status, idea_id = classify_save_request("abc-123", check_data)
+        assert status == "update"
         assert idea_id == "abc-123"
 
-    def test_existing_id_not_found_trashed(self):
-        """existingIdeaId provided but query returned nothing (idea was trashed).
-        Current behavior: falls through to new. This could cause a duplicate
-        domain error if the domain still exists on another active idea.
+    def test_existing_id_trashed_detected(self):
+        """existingIdeaId provided, active query empty, trashed query has match.
+        Should return "trashed" so the server can show a clear error.
         """
-        is_new, idea_id = classify_save_request("abc-123", [])
-        assert is_new is True
+        status, idea_id = classify_save_request("abc-123", [], trashed_check_data=[{"id": "abc-123"}])
+        assert status == "trashed"
         assert idea_id is None
 
-    def test_existing_id_not_found_wrong_user(self):
-        """existingIdeaId belongs to a different user → query returns empty.
-        Same fallthrough behavior as trashed.
+    def test_existing_id_not_found_anywhere(self):
+        """existingIdeaId not in active or trashed queries (wrong user, deleted).
+        Falls through to new.
         """
-        is_new, idea_id = classify_save_request("other-user-idea", [])
-        assert is_new is True
+        status, idea_id = classify_save_request("other-user-idea", [], trashed_check_data=[])
+        assert status == "new"
+        assert idea_id is None
+
+    def test_existing_id_no_trashed_check(self):
+        """existingIdeaId not found, trashed_check_data is None (not checked).
+        Falls through to new (backward-compatible with no second query).
+        """
+        status, idea_id = classify_save_request("abc-123", [], trashed_check_data=None)
+        assert status == "new"
         assert idea_id is None
 
     def test_existing_id_with_none_check_data(self):
         """check_data is None (defensive) → treat as new."""
-        is_new, idea_id = classify_save_request("abc-123", None)
-        assert is_new is True
+        status, idea_id = classify_save_request("abc-123", None)
+        assert status == "new"
         assert idea_id is None
 
     def test_multiple_matches_uses_first(self):
@@ -67,8 +75,8 @@ class TestClassifySaveRequest:
             {"id": "first-id", "product_name": "First"},
             {"id": "second-id", "product_name": "Second"},
         ]
-        is_new, idea_id = classify_save_request("first-id", check_data)
-        assert is_new is False
+        status, idea_id = classify_save_request("first-id", check_data)
+        assert status == "update"
         assert idea_id == "first-id"
 
     def test_existing_id_returns_db_id_not_client_id(self):
@@ -76,9 +84,16 @@ class TestClassifySaveRequest:
         This matters if the client somehow sends a different ID than what's in check_data.
         """
         check_data = [{"id": "db-id-456", "product_name": "From DB"}]
-        is_new, idea_id = classify_save_request("client-id-789", check_data)
-        assert is_new is False
+        status, idea_id = classify_save_request("client-id-789", check_data)
+        assert status == "update"
         assert idea_id == "db-id-456"
+
+    def test_active_match_takes_priority_over_trashed(self):
+        """If active query matches, trashed_check_data is irrelevant."""
+        check_data = [{"id": "active-idea"}]
+        status, idea_id = classify_save_request("active-idea", check_data, trashed_check_data=[{"id": "active-idea"}])
+        assert status == "update"
+        assert idea_id == "active-idea"
 
 
 # ── determine_idea_status ─────────────────────────────────────
@@ -115,15 +130,42 @@ class TestDetermineIdeaStatus:
         outputs = {"output2": "Carrd copy here"}
         assert determine_idea_status(outputs) == "draft"
 
-    def test_status_regression_complete_to_draft(self):
-        """Re-saving a previously complete idea with cleared outputs → draft.
-        This documents current behavior: status can regress. The caller
-        is responsible for deciding whether to allow this.
+
+# ── resolve_idea_status ───────────────────────────────────────
+
+
+class TestResolveIdeaStatus:
+    """Prevent status regression on re-save (complete should never go back to draft)."""
+
+    def test_new_idea_with_outputs(self):
+        """New idea (no current_status) with outputs → complete."""
+        assert resolve_idea_status({"output1": "deck"}, None) == "complete"
+
+    def test_new_idea_without_outputs(self):
+        """New idea with no outputs → draft."""
+        assert resolve_idea_status({}, None) == "draft"
+
+    def test_draft_to_complete(self):
+        """Re-save a draft with new outputs → upgrades to complete."""
+        assert resolve_idea_status({"output1": "deck"}, "draft") == "complete"
+
+    def test_complete_stays_complete_with_outputs(self):
+        """Re-save a complete idea with new outputs → stays complete."""
+        assert resolve_idea_status({"output1": "new deck"}, "complete") == "complete"
+
+    def test_complete_stays_complete_without_outputs(self):
+        """Re-save a complete idea with empty outputs → stays complete (no regression).
+        This is the key fix: mid-conversation re-save should NOT downgrade status.
         """
-        # First save: complete
-        assert determine_idea_status({"output1": "deck"}) == "complete"
-        # Second save: outputs cleared
-        assert determine_idea_status({"output1": ""}) == "draft"
+        assert resolve_idea_status({"output1": ""}, "complete") == "complete"
+
+    def test_complete_stays_complete_with_none_outputs(self):
+        """Re-save a complete idea with None outputs → stays complete."""
+        assert resolve_idea_status(None, "complete") == "complete"
+
+    def test_draft_stays_draft_without_outputs(self):
+        """Re-save a draft without outputs → stays draft (no change)."""
+        assert resolve_idea_status({}, "draft") == "draft"
 
 
 # ── compute_next_version ──────────────────────────────────────
@@ -176,11 +218,11 @@ class TestSaveFlowIntegration:
         """New idea, user under limit → allowed, creates version 1.
         Happy path for first-time save.
         """
-        is_new, idea_id = classify_save_request(None, [])
-        assert is_new is True
+        status, idea_id = classify_save_request(None, [])
+        assert status == "new"
         assert not idea_limit_reached(5, "free")  # 5 < 19
-        status = determine_idea_status({"output1": "deck prompt"})
-        assert status == "complete"
+        idea_status = resolve_idea_status({"output1": "deck prompt"}, None)
+        assert idea_status == "complete"
         version = compute_next_version([])
         assert version == 1
 
@@ -188,31 +230,30 @@ class TestSaveFlowIntegration:
         """Re-save with valid existingIdeaId → update, new version.
         Happy path for editing an existing idea.
         """
-        check_data = [{"id": "idea-abc"}]
-        is_new, idea_id = classify_save_request("idea-abc", check_data)
-        assert is_new is False
+        check_data = [{"id": "idea-abc", "status": "complete"}]
+        status, idea_id = classify_save_request("idea-abc", check_data)
+        assert status == "update"
         assert idea_id == "idea-abc"
-        # Idea limit is NOT checked for re-saves (is_new is False)
-        status = determine_idea_status({"output1": "updated deck"})
-        assert status == "complete"
+        # Idea limit is NOT checked for updates
+        idea_status = resolve_idea_status({"output1": "updated deck"}, "complete")
+        assert idea_status == "complete"
         version = compute_next_version([{"version_number": 2}, {"version_number": 1}])
         assert version == 3
 
-    def test_resave_trashed_idea_falls_through(self):
-        """Re-save a trashed idea → classified as new (current behavior).
-        This documents a potential reliability issue: the user thinks they're
-        updating, but the server creates a new idea instead.
+    def test_resave_trashed_idea_returns_trashed(self):
+        """Re-save a trashed idea → returns "trashed" status.
+        Server should return a 410 error telling the user to restore first.
         """
-        is_new, idea_id = classify_save_request("trashed-idea-id", [])
-        assert is_new is True
+        status, idea_id = classify_save_request(
+            "trashed-idea-id", [], trashed_check_data=[{"id": "trashed-idea-id"}]
+        )
+        assert status == "trashed"
         assert idea_id is None
-        # This would then hit the INSERT path, potentially causing a
-        # duplicate domain error if the domain is already in use
 
     def test_new_save_at_limit_blocked(self):
         """New idea when user is at limit → blocked."""
-        is_new, _ = classify_save_request(None, [])
-        assert is_new is True
+        status, _ = classify_save_request(None, [])
+        assert status == "new"
         assert idea_limit_reached(19, "free") is True  # 19 >= 19
 
     def test_resave_at_limit_allowed(self):
@@ -221,29 +262,35 @@ class TestSaveFlowIntegration:
         the idea limit. The server checks `if is_new and idea_limit_reached(...)`.
         """
         check_data = [{"id": "existing-idea"}]
-        is_new, idea_id = classify_save_request("existing-idea", check_data)
+        status, idea_id = classify_save_request("existing-idea", check_data)
+        is_new = status == "new"
         assert is_new is False
         # Even though limit is reached, the `is_new` guard means this won't block
         assert idea_limit_reached(19, "free") is True
-        # The endpoint does: `if is_new and idea_limit_reached(...)` → False and True → False
         assert not (is_new and idea_limit_reached(19, "free"))
 
     def test_draft_resave_preserves_draft(self):
         """Re-saving mid-conversation (no outputs yet) → stays draft."""
-        check_data = [{"id": "draft-idea"}]
-        is_new, idea_id = classify_save_request("draft-idea", check_data)
-        assert is_new is False
-        status = determine_idea_status({})
-        assert status == "draft"
+        check_data = [{"id": "draft-idea", "status": "draft"}]
+        status, idea_id = classify_save_request("draft-idea", check_data)
+        assert status == "update"
+        idea_status = resolve_idea_status({}, "draft")
+        assert idea_status == "draft"
 
-    def test_complete_to_draft_regression_on_resave(self):
-        """Re-save a complete idea but with empty outputs → status regresses to draft.
-        This could happen if the client sends a re-save during a new conversation
-        before outputs are generated. Documents current behavior.
+    def test_complete_resave_without_outputs_stays_complete(self):
+        """Re-save a complete idea mid-conversation (no new outputs yet).
+        Status must NOT regress to draft — this was a real bug.
         """
-        check_data = [{"id": "complete-idea"}]
-        is_new, _ = classify_save_request("complete-idea", check_data)
-        assert is_new is False
-        # Previously complete, but this re-save has no outputs
-        status = determine_idea_status({"output1": ""})
-        assert status == "draft"
+        check_data = [{"id": "complete-idea", "status": "complete"}]
+        status, _ = classify_save_request("complete-idea", check_data)
+        assert status == "update"
+        idea_status = resolve_idea_status({"output1": ""}, "complete")
+        assert idea_status == "complete"
+
+    def test_draft_to_complete_on_resave(self):
+        """Re-save a draft idea with new outputs → upgrades to complete."""
+        check_data = [{"id": "draft-idea", "status": "draft"}]
+        status, _ = classify_save_request("draft-idea", check_data)
+        assert status == "update"
+        idea_status = resolve_idea_status({"output1": "new deck"}, "draft")
+        assert idea_status == "complete"

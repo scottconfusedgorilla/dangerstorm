@@ -15,6 +15,7 @@ from utils import (
     classify_save_request,
     compute_next_version,
     determine_idea_status,
+    resolve_idea_status,
     idea_limit_reached,
     max_ideas_for_tier,
     parse_forwarded_ip,
@@ -590,20 +591,33 @@ def save_idea():
         existing_idea_id = data.get("existingIdeaId")
         force = data.get("force", False)
 
+        check_data = []
+        trashed_check_data = None
         if existing_idea_id:
             # Verify this idea belongs to the user and is not trashed
-            check = sb.table("ideas").select("id, product_name").eq("id", existing_idea_id).eq("user_id", user_id).neq("status", "trash").execute()
+            check = sb.table("ideas").select("id, product_name, status").eq("id", existing_idea_id).eq("user_id", user_id).neq("status", "trash").execute()
             check_data = check.data
-        else:
-            check_data = []
-        is_new, existing_id = classify_save_request(existing_idea_id, check_data)
+            if not check_data:
+                # Check if the idea exists but is trashed
+                trashed = sb.table("ideas").select("id").eq("id", existing_idea_id).eq("user_id", user_id).eq("status", "trash").execute()
+                trashed_check_data = trashed.data
+
+        save_status, existing_id = classify_save_request(existing_idea_id, check_data, trashed_check_data)
+
+        # Trashed idea: return a clear error instead of silently creating a duplicate
+        if save_status == "trashed":
+            return jsonify({"error": "This idea was moved to trash. Restore it from your dashboard to continue editing."}), 410
+
+        is_new = save_status == "new"
 
         # Idea limit only checked for new ideas (tested in tests/test_save_flow.py::TestSaveFlowIntegration)
         if is_new and idea_limit_reached(idea_count, tier):
             return jsonify({"error": f"Idea limit reached ({max_ideas_for_tier(tier)}). Upgrade to Pro for more."}), 403
 
-        # Determine status (tested in tests/test_save_flow.py::TestDetermineIdeaStatus)
-        idea_status = determine_idea_status(outputs)
+        # Determine status — prevent regression on re-save
+        # (tested in tests/test_save_flow.py::TestResolveIdeaStatus)
+        current_status = check_data[0].get("status") if check_data else None
+        idea_status = resolve_idea_status(outputs, current_status)
 
         # Upsert idea
         if is_new:
