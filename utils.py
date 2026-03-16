@@ -109,6 +109,68 @@ def sanitize_domain(domain):
     return domain, False
 
 
+# ── Save-flow decision logic ──────────────────────────────────
+
+
+def classify_save_request(existing_idea_id, check_data):
+    """Determine whether a save request is a new idea or an update.
+
+    The server queries for existing_idea_id (matching user_id, not trashed).
+    This function interprets the result.
+
+    Args:
+        existing_idea_id: The idea ID sent by the client, or None.
+        check_data: List of matching rows from the ownership query.
+            Each row is a dict with at least "id".
+
+    Returns:
+        (is_new, idea_id) where is_new=True means create a new idea,
+        and idea_id is the existing idea's ID (or None if new).
+    """
+    if not existing_idea_id:
+        return True, None
+    if check_data and len(check_data) > 0:
+        return False, check_data[0]["id"]
+    # existingIdeaId was provided but not found (trashed, wrong user, etc.)
+    return True, None
+
+
+def determine_idea_status(outputs):
+    """Decide whether an idea is 'complete' or 'draft'.
+
+    An idea is complete if it has a non-empty deck prompt (output1).
+
+    Args:
+        outputs: Dict of outputs, e.g. {"output1": "...", "output2": "..."}.
+            May be None or empty.
+
+    Returns:
+        "complete" or "draft".
+    """
+    if not outputs:
+        return "draft"
+    if bool(outputs.get("output1")):
+        return "complete"
+    return "draft"
+
+
+def compute_next_version(versions_data):
+    """Compute the next version number for an idea.
+
+    Args:
+        versions_data: List of dicts from the versions query, each with
+            "version_number". Expected to be sorted desc, but we take
+            the max defensively.
+
+    Returns:
+        Integer — the next version number (1 if no versions exist).
+    """
+    if not versions_data:
+        return 1
+    max_version = max(v["version_number"] for v in versions_data)
+    return max_version + 1
+
+
 # ── Data sanitization ─────────────────────────────────────────
 
 def strip_null_bytes(obj):

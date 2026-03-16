@@ -12,6 +12,9 @@ import json
 from utils import (
     ANON_DAILY_LIMIT,
     check_anon_limit as _check_anon_limit_pure,
+    classify_save_request,
+    compute_next_version,
+    determine_idea_status,
     idea_limit_reached,
     max_ideas_for_tier,
     parse_forwarded_ip,
@@ -582,29 +585,25 @@ def save_idea():
         tier = profile.data["tier"]
         idea_count = profile.data["idea_count"]
 
-        # If client already knows the idea ID, use it directly (re-save)
+        # Classify: new idea or update to existing?
+        # (tested in tests/test_save_flow.py::TestClassifySaveRequest)
         existing_idea_id = data.get("existingIdeaId")
         force = data.get("force", False)
 
         if existing_idea_id:
-            # Verify this idea belongs to the user
+            # Verify this idea belongs to the user and is not trashed
             check = sb.table("ideas").select("id, product_name").eq("id", existing_idea_id).eq("user_id", user_id).neq("status", "trash").execute()
-            if check.data:
-                existing = check
-            else:
-                existing = type('', (), {'data': []})()
+            check_data = check.data
         else:
-            # No existing ID — always create a new idea
-            existing = type('', (), {'data': []})()
-        is_new = len(existing.data) == 0
+            check_data = []
+        is_new, existing_id = classify_save_request(existing_idea_id, check_data)
 
-        # Idea limit tested in tests/test_utils.py::TestIdeaLimits
+        # Idea limit only checked for new ideas (tested in tests/test_save_flow.py::TestSaveFlowIntegration)
         if is_new and idea_limit_reached(idea_count, tier):
             return jsonify({"error": f"Idea limit reached ({max_ideas_for_tier(tier)}). Upgrade to Pro for more."}), 403
 
-        # Determine status based on whether outputs are present
-        has_outputs = bool(outputs.get("output1"))
-        idea_status = "complete" if has_outputs else "draft"
+        # Determine status (tested in tests/test_save_flow.py::TestDetermineIdeaStatus)
+        idea_status = determine_idea_status(outputs)
 
         # Upsert idea
         if is_new:
@@ -629,16 +628,16 @@ def save_idea():
                 raise
             idea_id = idea_result.data[0]["id"]
         else:
-            idea_id = existing.data[0]["id"]
+            idea_id = existing_id
             sb.table("ideas").update({
                 "tagline": tagline,
                 "status": idea_status,
                 "updated_at": "now()",
             }).eq("id", idea_id).execute()
 
-        # Get next version number
+        # Get next version number (tested in tests/test_save_flow.py::TestComputeNextVersion)
         versions = sb.table("idea_versions").select("version_number").eq("idea_id", idea_id).order("version_number", desc=True).limit(1).execute()
-        next_version = (versions.data[0]["version_number"] + 1) if versions.data else 1
+        next_version = compute_next_version(versions.data)
 
         # Insert version
         sb.table("idea_versions").insert({
