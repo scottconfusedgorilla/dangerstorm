@@ -199,6 +199,7 @@ function doStartOver() {
     hasUnsavedWork = false;
     conversationHistory = [];
     clearSession();
+    if (typeof resetGeekMode === 'function') resetGeekMode();
     clearPendingFile();
     messagesEl.innerHTML = "";
     outputsContainer.classList.add("hidden");
@@ -426,6 +427,7 @@ function showOutputs(output1, output2, output3, output4, output5, output6) {
     applyExtrasPrefs();
     hasUnsavedWork = true;
     outputsContainer.scrollIntoView({ behavior: "smooth" });
+    if (typeof triggerGeekPulse === 'function') triggerGeekPulse();
 
     // Anonymous users: hide save, show sign-up CTA
     if (!getUser()) {

@@ -2080,3 +2080,162 @@ h3.editable .inline-edit {
         right: 16px;
     }
 }
+
+/* ── Geek Mode / X-Ray ─────────────────────────────────────────────────── */
+
+@keyframes geekPulseAnim {
+    0%, 100% { filter: drop-shadow(0 0 3px #F97316); opacity: 1; }
+    50%       { filter: drop-shadow(0 0 10px #F97316) drop-shadow(0 0 20px rgba(249,115,22,0.4)); opacity: 0.85; }
+}
+
+.header-bolt.geek-pulse {
+    animation: geekPulseAnim 1.8s ease-in-out infinite;
+}
+
+.header-bolt.geek-active {
+    filter: drop-shadow(0 0 8px #F97316);
+}
+
+.header-brand.geek-clickable {
+    cursor: pointer;
+}
+
+/* X-ray view */
+#geek-view {
+    padding-top: 8px;
+}
+
+.geek-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(249, 115, 22, 0.12);
+    border: 1px solid rgba(249, 115, 22, 0.35);
+    border-radius: 6px;
+    padding: 8px 14px;
+    margin-bottom: 16px;
+}
+
+.geek-bar-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+}
+
+.geek-close-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.geek-close-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.geek-section {
+    margin-bottom: 12px;
+}
+
+.geek-text {
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    border-radius: 6px 6px 0 0;
+    padding: 12px 14px;
+    font-size: 0.8rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    margin: 0;
+}
+
+.geek-section:not(.annotated) .geek-text {
+    border-radius: 6px;
+}
+
+.geek-annotation {
+    background: rgba(249, 115, 22, 0.06);
+    border: 1px solid rgba(249, 115, 22, 0.25);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    padding: 8px 14px 10px;
+}
+
+.geek-ann-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    color: var(--accent);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.geek-ann-note {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.geek-deeper-wrap {
+    margin: 20px 0 8px;
+    text-align: center;
+}
+
+.geek-deeper-link {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 1px;
+    transition: color 0.15s;
+}
+
+.geek-deeper-link:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+/* Inception layer */
+.inception-block {
+    margin-top: 24px;
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+}
+
+.inception-header {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.inception-intro {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.inception-section .geek-text {
+    font-style: italic;
+    color: var(--text-muted);
+}
+
+.inception-meta {
+    margin-top: 20px;
+    font-size: 0.82rem;
+    color: var(--accent);
+    font-weight: 600;
+    text-align: center;
+}
