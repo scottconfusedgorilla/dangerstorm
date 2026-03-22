@@ -27,6 +27,9 @@ function initSupabase() {
             // IMPORTANT: Do NOT await inside this callback.
             // Supabase SDK v2.98 uses navigator.locks internally;
             // an async callback can deadlock signInWithPassword.
+            if (event === "SIGNED_IN") {
+                clearAppStorage();
+            }
             if (session?.user) {
                 currentUser = session.user;
                 // Fetch profile in background — don't block the callback
@@ -140,7 +143,19 @@ async function signUpWithPassword(email, password) {
     }
 }
 
+function clearAppStorage() {
+    // Prevent session bleed between users — remove all app-specific localStorage
+    localStorage.removeItem("dangerstorm_session");
+    localStorage.removeItem("ds_tour_done");
+    localStorage.removeItem("ds-geek-discovered");
+    // Clear per-idea extras prefs (ds-extras-*)
+    Object.keys(localStorage).forEach(key => {
+        if (key.startsWith("ds-extras-")) localStorage.removeItem(key);
+    });
+}
+
 async function signOut() {
+    clearAppStorage();
     await sbClient.auth.signOut();
     currentUser = null;
     currentProfile = null;
@@ -172,7 +187,7 @@ function updateAuthUI() {
                         <a href="mailto:codewrangler@dangerstorm.net" class="auth-kebab-item">Feedback</a>
                         <a href="https://bsky.app/profile/dangerstorm.bsky.social" target="_blank" rel="noopener" class="auth-kebab-item">BlueSky</a>
                         <button id="sign-out-btn" class="auth-kebab-item">Sign out</button>
-                        <span class="auth-kebab-item build-label">build 113</span>
+                        <span class="auth-kebab-item build-label">build 116</span>
                     </div>
                 </div>
             </div>
