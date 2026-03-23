@@ -138,6 +138,12 @@
       tourOverlay = null;
     }
     localStorage.setItem("ds_tour_done", "1");
+    document.cookie = "ds_tour_done=1; max-age=31536000; path=/; SameSite=Lax";
+  }
+
+  function isTourDone() {
+    return localStorage.getItem("ds_tour_done") === "1"
+      || document.cookie.includes("ds_tour_done=1");
   }
 
   function startTour() {
@@ -317,7 +323,7 @@
     // Skip tour if loading a saved idea (URL has /{userId}/{ideaId})
     const pathParts = window.location.pathname.split("/").filter(Boolean);
     const isLoadingSavedIdea = pathParts.length >= 2 && pathParts[0].length > 10;
-    if (!localStorage.getItem("ds_tour_done") && !isLoadingSavedIdea) {
+    if (!isTourDone() && !isLoadingSavedIdea) {
       setTimeout(startTour, 800);
     }
   }
