@@ -314,7 +314,10 @@
     createHelpUI();
 
     // Show tour on first visit (with a slight delay so the page renders)
-    if (!localStorage.getItem("ds_tour_done")) {
+    // Skip tour if loading a saved idea (URL has /{userId}/{ideaId})
+    const pathParts = window.location.pathname.split("/").filter(Boolean);
+    const isLoadingSavedIdea = pathParts.length >= 2 && pathParts[0].length > 10;
+    if (!localStorage.getItem("ds_tour_done") && !isLoadingSavedIdea) {
       setTimeout(startTour, 800);
     }
   }
