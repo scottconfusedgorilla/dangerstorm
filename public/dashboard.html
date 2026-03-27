@@ -82,5 +82,16 @@
     <script src="/auth.js"></script>
     <script src="/api.js"></script>
     <script src="/dashboard.js"></script>
+    <script src="/geek.js"></script>
+
+    <div id="geek-overlay" class="geek-overlay hidden">
+        <div class="geek-panel">
+            <div class="geek-panel-header">
+                <span class="geek-panel-title">⚡ X-RAY MODE</span>
+                <button class="geek-panel-close" onclick="window.__geekMode.closeOverlay()">Close</button>
+            </div>
+            <div class="geek-panel-content"></div>
+        </div>
+    </div>
 </body>
 </html>

@@ -1,5 +1,6 @@
 // geek.js — X-Ray Mode Easter Egg
-// Activated by clicking the DangerStorm logo after outputs are generated
+// Activated by clicking the DangerStorm logo after outputs are generated,
+// or via the Geek Mode button on dashboard cards
 
 (function () {
   const ANNOTATIONS = {
@@ -67,6 +68,8 @@
   let geekModeActive = false;
   let outputsReady = false;
 
+  // ── Init (idea editor page — logo click) ───────────────────────────────
+
   function init() {
     const brand = document.querySelector('.header-brand');
     if (!brand) return;
@@ -105,6 +108,22 @@
     }
   }
 
+  // ── Core rendering (shared between editor + overlay) ───────────────────
+
+  function renderGeekView(promptText) {
+    var html =
+      '<div class="geek-bar">' +
+        '<span class="geek-bar-title">&#9889; X-RAY MODE &mdash; Why this prompt works</span>' +
+      '</div>' +
+      '<div class="geek-sections">' + buildAnnotatedView(promptText) + '</div>' +
+      '<div class="geek-deeper-wrap">' +
+        '<a href="#" class="geek-deeper-link" onclick="event.preventDefault();window.__geekMode.showInception(this)">Go deeper &rarr; see the prompt that drives DangerStorm itself</a>' +
+      '</div>';
+    return html;
+  }
+
+  // ── Editor-page geek mode (logo click) ─────────────────────────────────
+
   function enterGeekMode() {
     geekModeActive = true;
     localStorage.setItem('ds-geek-discovered', '1');
@@ -121,14 +140,9 @@
 
     const geekView = document.createElement('div');
     geekView.id = 'geek-view';
-    geekView.innerHTML =
-      '<div class="geek-bar">' +
-        '<span class="geek-bar-title">&#9889; X-RAY MODE &mdash; Why this prompt works</span>' +
+    geekView.innerHTML = renderGeekView(text) +
+      '<div style="text-align:center;margin-top:8px;">' +
         '<button class="geek-close-btn" onclick="window.__geekMode.exit()">Exit X-ray</button>' +
-      '</div>' +
-      '<div class="geek-sections">' + buildAnnotatedView(text) + '</div>' +
-      '<div class="geek-deeper-wrap">' +
-        '<a href="#" class="geek-deeper-link" onclick="event.preventDefault();window.__geekMode.showInception(this)">Go deeper &rarr; see the prompt that drives DangerStorm itself</a>' +
       '</div>';
 
     output1.appendChild(geekView);
@@ -144,6 +158,39 @@
     const bolt = document.querySelector('.header-bolt');
     if (bolt) { bolt.classList.remove('geek-active'); bolt.classList.add('geek-pulse'); }
   }
+
+  // ── Dashboard overlay mode ─────────────────────────────────────────────
+
+  function launchGeekOverlay(promptText, ideaName) {
+    var overlay = document.getElementById('geek-overlay');
+    if (!overlay) return;
+
+    var title = overlay.querySelector('.geek-panel-title');
+    if (title) title.textContent = '⚡ X-RAY MODE — ' + (ideaName || 'Prompt Analysis');
+
+    var content = overlay.querySelector('.geek-panel-content');
+    if (content) {
+      var geekView = document.createElement('div');
+      geekView.id = 'geek-view';
+      geekView.innerHTML = renderGeekView(promptText);
+      content.innerHTML = '';
+      content.appendChild(geekView);
+    }
+
+    overlay.classList.remove('hidden');
+    localStorage.setItem('ds-geek-discovered', '1');
+  }
+
+  function closeGeekOverlay() {
+    var overlay = document.getElementById('geek-overlay');
+    if (overlay) {
+      overlay.classList.add('hidden');
+      var content = overlay.querySelector('.geek-panel-content');
+      if (content) content.innerHTML = '';
+    }
+  }
+
+  // ── Shared helpers ─────────────────────────────────────────────────────
 
   function buildAnnotatedView(text) {
     const sections = [];
@@ -215,7 +262,14 @@
     block.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  window.__geekMode = { exit: exitGeekMode, showInception: showInception };
+  // ── Exports ────────────────────────────────────────────────────────────
+
+  window.__geekMode = {
+    exit: exitGeekMode,
+    showInception: showInception,
+    launchOverlay: launchGeekOverlay,
+    closeOverlay: closeGeekOverlay
+  };
   window.triggerGeekPulse = triggerPulse;
   window.resetGeekMode = resetGeekMode;
 

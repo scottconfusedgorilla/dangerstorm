@@ -69,8 +69,13 @@ async function loadDashboard() {
             const folderIcon = `<svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 2.5V11.5C1.5 12.05 1.95 12.5 2.5 12.5H13.5C14.05 12.5 14.5 12.05 14.5 11.5V4.5C14.5 3.95 14.05 3.5 13.5 3.5H8L6.5 1.5H2.5C1.95 1.5 1.5 1.95 1.5 2.5Z"/></svg>`;
             const filesLink = `<a href="${folderHref}"${folderTarget} class="idea-files-link" title="${folderTitle}">${folderIcon}</a>`;
 
+            const geekTrigger = idea.status === 'complete'
+                ? `<button class="geek-card-trigger" onclick="event.stopPropagation();launchGeekFromCard('${idea.id}', '${escapeAttr(name)}')" title="See why this prompt works"><span class="geek-bolt">⚡</span> Geek Mode</button>`
+                : '';
+
             return `
                 <div class="idea-card" data-id="${idea.id}" draggable="true">
+                    ${geekTrigger}
                     <div class="idea-card-header">
                         <h3 class="idea-name editable" onclick="editField(this, '${idea.id}', 'product_name')" title="Click to edit">${escapeHtml(name)}</h3>
                         <span class="idea-status ${idea.status}">${idea.status}</span>
@@ -123,6 +128,19 @@ function openIdea(ideaId) {
     const user = getUser();
     if (!user) return;
     window.location.href = `/${user.id}/${ideaId}`;
+}
+
+async function launchGeekFromCard(ideaId, ideaName) {
+    try {
+        const versions = await getIdeaVersions(ideaId);
+        if (!versions || !versions.length || !versions[0].outputs || !versions[0].outputs.output1) {
+            dsAlert("This idea doesn't have a generated prompt yet. Open it and complete the conversation first.");
+            return;
+        }
+        window.__geekMode.launchOverlay(versions[0].outputs.output1, ideaName);
+    } catch (err) {
+        dsAlert("Couldn't load idea outputs: " + err.message);
+    }
 }
 
 async function confirmTrash(ideaId, name) {

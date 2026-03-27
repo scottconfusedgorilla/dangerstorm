@@ -17,6 +17,10 @@ button, a, .action-btn, .idea-card {
     --text: #F8FAFC;
     --text-muted: #94A3B8;
     --border: #334155;
+    --geek-accent: #00FF41;
+    --geek-glow: rgba(0, 255, 65, 0.4);
+    --geek-bg: rgba(0, 255, 65, 0.06);
+    --geek-border: rgba(0, 255, 65, 0.25);
 }
 
 .hidden {
@@ -1113,6 +1117,7 @@ header .tagline {
 }
 
 .idea-card {
+    position: relative;
     background: var(--bg-light);
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -2084,8 +2089,8 @@ h3.editable .inline-edit {
 /* ── Geek Mode / X-Ray ─────────────────────────────────────────────────── */
 
 @keyframes geekPulseAnim {
-    0%, 100% { filter: drop-shadow(0 0 3px #F97316); opacity: 1; }
-    50%       { filter: drop-shadow(0 0 10px #F97316) drop-shadow(0 0 20px rgba(249,115,22,0.4)); opacity: 0.85; }
+    0%, 100% { filter: drop-shadow(0 0 3px var(--geek-accent)); opacity: 1; }
+    50%       { filter: drop-shadow(0 0 10px var(--geek-accent)) drop-shadow(0 0 20px var(--geek-glow)); opacity: 0.85; }
 }
 
 .header-bolt.geek-pulse {
@@ -2093,7 +2098,7 @@ h3.editable .inline-edit {
 }
 
 .header-bolt.geek-active {
-    filter: drop-shadow(0 0 8px #F97316);
+    filter: drop-shadow(0 0 8px var(--geek-accent));
 }
 
 .header-brand.geek-clickable {
@@ -2109,23 +2114,25 @@ h3.editable .inline-edit {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(249, 115, 22, 0.12);
-    border: 1px solid rgba(249, 115, 22, 0.35);
+    background: rgba(0, 255, 65, 0.10);
+    border: 1px solid var(--geek-border);
     border-radius: 6px;
     padding: 8px 14px;
     margin-bottom: 16px;
+    box-shadow: 0 0 12px rgba(0, 255, 65, 0.08), inset 0 0 12px rgba(0, 255, 65, 0.03);
 }
 
 .geek-bar-title {
     font-size: 0.8rem;
     font-weight: 700;
     letter-spacing: 0.06em;
-    color: var(--accent);
+    color: var(--geek-accent);
+    text-shadow: 0 0 8px var(--geek-glow);
 }
 
 .geek-close-btn {
     background: none;
-    border: 1px solid var(--border);
+    border: 1px solid var(--geek-border);
     color: var(--text-muted);
     font-size: 0.75rem;
     padding: 3px 10px;
@@ -2135,8 +2142,8 @@ h3.editable .inline-edit {
 }
 
 .geek-close-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
+    border-color: var(--geek-accent);
+    color: var(--geek-accent);
 }
 
 .geek-section {
@@ -2161,8 +2168,8 @@ h3.editable .inline-edit {
 }
 
 .geek-annotation {
-    background: rgba(249, 115, 22, 0.06);
-    border: 1px solid rgba(249, 115, 22, 0.25);
+    background: var(--geek-bg);
+    border: 1px solid var(--geek-border);
     border-top: none;
     border-radius: 0 0 6px 6px;
     padding: 8px 14px 10px;
@@ -2173,7 +2180,8 @@ h3.editable .inline-edit {
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.07em;
-    color: var(--accent);
+    color: var(--geek-accent);
+    text-shadow: 0 0 6px rgba(0, 255, 65, 0.3);
     margin-bottom: 4px;
     text-transform: uppercase;
 }
@@ -2194,20 +2202,20 @@ h3.editable .inline-edit {
     font-size: 0.78rem;
     color: var(--text-muted);
     text-decoration: none;
-    border-bottom: 1px dashed var(--border);
+    border-bottom: 1px dashed var(--geek-border);
     padding-bottom: 1px;
     transition: color 0.15s;
 }
 
 .geek-deeper-link:hover {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
+    color: var(--geek-accent);
+    border-bottom-color: var(--geek-accent);
 }
 
 /* Inception layer */
 .inception-block {
     margin-top: 24px;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--geek-border);
     padding-top: 20px;
 }
 
@@ -2215,7 +2223,8 @@ h3.editable .inline-edit {
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.1em;
-    color: var(--text-muted);
+    color: var(--geek-accent);
+    text-shadow: 0 0 6px rgba(0, 255, 65, 0.3);
     text-transform: uppercase;
     margin-bottom: 10px;
 }
@@ -2235,7 +2244,133 @@ h3.editable .inline-edit {
 .inception-meta {
     margin-top: 20px;
     font-size: 0.82rem;
-    color: var(--accent);
+    color: var(--geek-accent);
+    text-shadow: 0 0 8px var(--geek-glow);
     font-weight: 600;
     text-align: center;
+}
+
+/* ── Geek Mode: Dashboard card trigger ────────────────────────────────── */
+
+.geek-card-trigger {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0, 255, 65, 0.10);
+    border: 1px solid var(--geek-border);
+    color: var(--geek-accent);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, box-shadow 0.2s;
+    z-index: 2;
+}
+
+.idea-card:hover .geek-card-trigger {
+    opacity: 1;
+}
+
+.geek-card-trigger:hover {
+    box-shadow: 0 0 10px var(--geek-glow), 0 0 20px rgba(0, 255, 65, 0.15);
+    background: rgba(0, 255, 65, 0.18);
+}
+
+.geek-card-trigger .geek-bolt {
+    font-size: 0.85rem;
+    filter: drop-shadow(0 0 4px var(--geek-glow));
+}
+
+/* ── Geek Mode: Overlay modal ─────────────────────────────────────────── */
+
+.geek-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px;
+    overflow-y: auto;
+}
+
+.geek-overlay.hidden {
+    display: none;
+}
+
+.geek-panel {
+    position: relative;
+    width: 100%;
+    max-width: 720px;
+    background: var(--bg);
+    border: 1px solid var(--geek-border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 0 30px rgba(0, 255, 65, 0.12), 0 0 60px rgba(0, 255, 65, 0.05);
+    overflow: hidden;
+}
+
+/* Scanline effect */
+.geek-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 255, 65, 0.015) 2px,
+        rgba(0, 255, 65, 0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 0;
+}
+
+.geek-panel > * {
+    position: relative;
+    z-index: 1;
+}
+
+.geek-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.geek-panel-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--geek-accent);
+    text-shadow: 0 0 8px var(--geek-glow);
+    text-transform: uppercase;
+}
+
+.geek-panel-close {
+    background: none;
+    border: 1px solid var(--geek-border);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.geek-panel-close:hover {
+    border-color: var(--geek-accent);
+    color: var(--geek-accent);
+}
+
+.geek-panel-content #geek-view {
+    padding-top: 0;
 }
