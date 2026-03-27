@@ -2110,24 +2110,56 @@ h3.editable .inline-edit {
     padding-top: 8px;
 }
 
-.geek-bar {
+/* Depth level tabs (Level 0 / 1 / 2) */
+.geek-levels {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: rgba(0, 255, 65, 0.10);
-    border: 1px solid var(--geek-border);
-    border-radius: 6px;
-    padding: 8px 14px;
-    margin-bottom: 16px;
-    box-shadow: 0 0 12px rgba(0, 255, 65, 0.08), inset 0 0 12px rgba(0, 255, 65, 0.03);
+    gap: 0;
+    margin-bottom: 0;
+    border-bottom: 2px solid var(--geek-border);
 }
 
-.geek-bar-title {
-    font-size: 0.8rem;
+.geek-level-tab {
+    background: rgba(0, 255, 65, 0.04);
+    border: 1px solid var(--geek-border);
+    border-bottom: none;
+    color: var(--text-muted);
+    font-size: 0.7rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
+    padding: 8px 16px;
+    margin-right: -1px;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    top: 2px;
+}
+
+.geek-level-tab:hover {
     color: var(--geek-accent);
+    background: rgba(0, 255, 65, 0.08);
+}
+
+.geek-level-tab.active {
+    background: var(--bg);
+    color: var(--geek-accent);
+    border-color: var(--geek-accent);
+    border-bottom: 2px solid var(--bg);
     text-shadow: 0 0 8px var(--geek-glow);
+    z-index: 1;
+}
+
+.geek-level-tab .level-emoji {
+    margin-right: 4px;
+}
+
+.geek-level-content {
+    display: none;
+    padding-top: 16px;
+}
+
+.geek-level-content.active {
+    display: block;
 }
 
 .geek-close-btn {
@@ -2376,42 +2408,51 @@ h3.editable .inline-edit {
     padding-top: 0;
 }
 
-/* ── Geek Mode: Output tabs ──────────────────────────────────────────── */
+/* ── Geek Mode: Filing cabinet output tabs ────────────────────────────── */
 
 .geek-tabs {
     display: flex;
-    gap: 4px;
-    margin-bottom: 16px;
+    gap: 0;
+    margin-bottom: 0;
+    border-bottom: 2px solid var(--border);
     flex-wrap: wrap;
 }
 
 .geek-tab {
-    background: rgba(0, 255, 65, 0.05);
-    border: 1px solid var(--geek-border);
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    border-bottom: none;
     color: var(--text-muted);
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     font-weight: 600;
     letter-spacing: 0.03em;
-    padding: 6px 14px;
-    border-radius: 6px;
+    text-transform: uppercase;
+    padding: 7px 14px 8px;
+    margin-right: -1px;
+    border-radius: 6px 6px 0 0;
     cursor: pointer;
     transition: all 0.15s;
+    position: relative;
+    top: 2px;
 }
 
 .geek-tab:hover {
     color: var(--geek-accent);
-    border-color: var(--geek-accent);
+    background: rgba(0, 255, 65, 0.06);
 }
 
 .geek-tab.active {
-    background: rgba(0, 255, 65, 0.15);
+    background: var(--bg);
     color: var(--geek-accent);
     border-color: var(--geek-accent);
-    box-shadow: 0 0 8px rgba(0, 255, 65, 0.15);
+    border-bottom: 2px solid var(--bg);
+    text-shadow: 0 0 6px rgba(0, 255, 65, 0.3);
+    z-index: 1;
 }
 
 .geek-tab-content {
     display: none;
+    padding-top: 14px;
 }
 
 .geek-tab-content.active {

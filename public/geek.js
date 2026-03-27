@@ -356,14 +356,66 @@
     return result;
   }
 
+  // ── Help system prompt sections for Level 2 ─────────────────────────────
+
+  const HELP_PROMPT_SECTIONS = [
+    {
+      label: "Identity Switch",
+      text: "You are DangerStorm's built-in help assistant. You help users understand how to use DangerStorm effectively.",
+      note: "Same AI, different persona. The help chatbot uses the same Claude model as the main conversation, but this single line transforms it from an aggressive product strategist into a friendly guide. One sentence of role definition, completely different behavior."
+    },
+    {
+      label: "Product Knowledge",
+      text: "## ABOUT DANGERSTORM\nDangerStorm is a conversational tool that takes a product idea and a domain name and generates a professional product pitch deck prompt in under 90 seconds.\n\n## HOW IT WORKS\n1. The user types their product idea and domain name in the chat\n2. DangerStorm asks 3-5 follow-up questions (one at a time)\n3. Once it has enough info, it generates multiple outputs:\n   - Pitch Deck Prompt\n   - Intro Pitch\n   - Carrd Landing Page Copy\n   - Kit Signup Form Copy\n   - Build Prompt",
+      note: "Grounding context. Without this section, the help bot would hallucinate features that don't exist. By spelling out exactly what DangerStorm does and how, every answer stays accurate. This is the difference between a help bot that guesses and one that knows."
+    },
+    {
+      label: "Feature Reference",
+      text: "## KEY FEATURES\n- Save Ideas — sign in to save your ideas to a personal dashboard\n- Refine — after outputs are generated, click \"Refine\" to re-enter the conversation\n- Branch — create a variation of an existing idea\n- Download All — download all outputs as a zip file\n- Attach Files — attach images or documents for context\n- Free tier — 3 conversations without signing in; unlimited with a free account",
+      note: "Explicit feature list. AI can't discover features by using the product — it needs to be told what exists. Each feature is described in user-facing language ('click Refine') not developer language ('POST /api/refine'). The bot answers like a user who knows the product, not an engineer who built it."
+    },
+    {
+      label: "Usage Tips",
+      text: "## TIPS FOR GREAT RESULTS\n- Be specific about what makes your product different — that's the heart of Slide 3\n- Have a domain in mind (even if you haven't bought it yet)\n- If DangerStorm asks a question you've already answered, just say \"I already told you\"\n- The more concrete your elevator pitch, the fewer follow-up questions needed\n- You can paste the deck prompt into Claude, ChatGPT, or any AI to generate the actual slides",
+      note: "Proactive guidance. These tips aren't just answers to FAQs — they teach users how to get better results. Tip #3 is especially important: it tells users they can push back on the AI, which most people don't realize is an option."
+    },
+    {
+      label: "Behavioral Guardrails",
+      text: "## YOUR BEHAVIOR\n- Be friendly, concise, and helpful\n- Answer questions about DangerStorm's features, workflow, and tips\n- If the user asks something unrelated to DangerStorm, gently redirect\n- Keep answers short — 2-4 sentences max unless they ask for detail\n- Use a warm, approachable tone (not the aggressive product-strategist voice of the main chat)",
+      note: "Tone calibration. The parenthetical '(not the aggressive product-strategist voice)' is doing heavy lifting — it explicitly contrasts this persona with the main chat persona. Without it, the help bot might bleed the main character's pushback style into support answers. Negative examples are as important as positive ones."
+    }
+  ];
+
   // ── Core rendering (shared between editor + overlay) ───────────────────
 
   function renderGeekView(outputs, conversation) {
     var userPhrases = extractUserPhrases(conversation);
 
-    // Build tabs for each output
+    // ── Level 0: Output X-ray ──
+    var level0Html = buildLevel0(outputs, userPhrases);
+
+    // ── Level 1: System prompt ──
+    var level1Html = buildLevel1();
+
+    // ── Level 2: Help prompt ──
+    var level2Html = buildLevel2();
+
+    var html =
+      '<div class="geek-levels">' +
+        '<button class="geek-level-tab active" data-level="0" onclick="window.__geekMode.switchLevel(this)"><span class="level-emoji">&#128269;</span> X-Ray</button>' +
+        '<button class="geek-level-tab" data-level="1" onclick="window.__geekMode.switchLevel(this)"><span class="level-emoji">&#9889;</span> System Prompt</button>' +
+        '<button class="geek-level-tab" data-level="2" onclick="window.__geekMode.switchLevel(this)"><span class="level-emoji">&#128165;</span> Full Inception</button>' +
+      '</div>' +
+      '<div class="geek-level-content active" data-level="0">' + level0Html + '</div>' +
+      '<div class="geek-level-content" data-level="1">' + level1Html + '</div>' +
+      '<div class="geek-level-content" data-level="2">' + level2Html + '</div>';
+    return html;
+  }
+
+  function buildLevel0(outputs, userPhrases) {
+    // Build filing cabinet tabs for each output
     var tabs = [];
-    if (outputs.output1) tabs.push({ key: 'output1', label: 'Pitch Deck Prompt' });
+    if (outputs.output1) tabs.push({ key: 'output1', label: 'Pitch Deck' });
     if (outputs.output6) tabs.push({ key: 'output6', label: 'Build Prompt' });
     if (outputs.output4) tabs.push({ key: 'output4', label: 'Intro Pitch' });
     if (outputs.output2) tabs.push({ key: 'output2', label: 'Landing Page' });
@@ -378,7 +430,6 @@
       tabBarHtml += '</div>';
     }
 
-    // Build content for each tab
     var tabContentHtml = '';
     tabs.forEach(function (tab, i) {
       var text = outputs[tab.key];
@@ -388,32 +439,76 @@
         ? '<div class="geek-legend"><span class="geek-legend-swatch"></span> Highlighted = from your input (hover for source)</div>'
         : '';
 
-      var bodyHtml = '';
-      if (tab.key === 'output1') {
-        bodyHtml = buildDeckAnnotatedView(text, allMatches);
-      } else {
-        bodyHtml = buildOutputAnnotatedView(tab.key, text, allMatches);
-      }
+      var bodyHtml = (tab.key === 'output1')
+        ? buildDeckAnnotatedView(text, allMatches)
+        : buildOutputAnnotatedView(tab.key, text, allMatches);
 
       tabContentHtml += '<div class="geek-tab-content' + (i === 0 ? ' active' : '') + '" data-tab="' + tab.key + '">' +
         legendHtml + bodyHtml + '</div>';
     });
 
-    var html =
-      '<div class="geek-bar">' +
-        '<span class="geek-bar-title">&#9889; X-RAY MODE &mdash; Why these prompts work</span>' +
-      '</div>' +
-      tabBarHtml +
-      tabContentHtml +
-      '<div class="geek-deeper-wrap">' +
-        '<a href="#" class="geek-deeper-link" onclick="event.preventDefault();window.__geekMode.showInception(this)">Go deeper &rarr; see the prompt that drives DangerStorm itself</a>' +
-      '</div>';
+    return tabBarHtml + tabContentHtml;
+  }
+
+  function buildLevel1() {
+    var html = '<div class="inception-block" style="border:none;padding:0;margin:0;">' +
+      '<div class="inception-header">THE CONVERSATION PROMPT</div>' +
+      '<p class="inception-intro">This is the actual system prompt that drove your conversation. Every question DangerStorm asked, every pushback, every moment of excitement &mdash; all of it came from these instructions.</p>';
+
+    INCEPTION_SECTIONS.forEach(function (s) {
+      var escaped = esc(s.text);
+      html +=
+        '<div class="geek-section annotated inception-section">' +
+          '<pre class="geek-text">' + escaped + '</pre>' +
+          '<div class="geek-annotation">' +
+            '<span class="geek-ann-label">' + s.label + '</span>' +
+            '<p class="geek-ann-note">' + s.note + '</p>' +
+          '</div>' +
+        '</div>';
+    });
+
+    html += '<p class="inception-meta">This experience you just had? It was driven by a prompt too. Now you know how to write one.</p>';
+    html += '</div>';
     return html;
+  }
+
+  function buildLevel2() {
+    var html = '<div class="inception-block" style="border:none;padding:0;margin:0;">' +
+      '<div class="inception-header">THE HELP PROMPT</div>' +
+      '<p class="inception-intro">DangerStorm has a second AI personality &mdash; the help chatbot (the ? button). Same model, completely different prompt. Here\'s how one system prompt creates two distinct experiences.</p>';
+
+    HELP_PROMPT_SECTIONS.forEach(function (s) {
+      var escaped = esc(s.text);
+      html +=
+        '<div class="geek-section annotated inception-section">' +
+          '<pre class="geek-text">' + escaped + '</pre>' +
+          '<div class="geek-annotation">' +
+            '<span class="geek-ann-label">' + s.label + '</span>' +
+            '<p class="geek-ann-note">' + s.note + '</p>' +
+          '</div>' +
+        '</div>';
+    });
+
+    html += '<p class="inception-meta">Two prompts. Two personalities. One AI. That\'s the power of prompt engineering.</p>';
+    html += '</div>';
+    return html;
+  }
+
+  function switchLevel(btn) {
+    var level = btn.getAttribute('data-level');
+    var container = btn.closest('#geek-view') || btn.closest('.geek-panel-content');
+    if (!container) return;
+
+    container.querySelectorAll('.geek-level-tab').forEach(function (t) { t.classList.remove('active'); });
+    container.querySelectorAll('.geek-level-content').forEach(function (c) { c.classList.remove('active'); });
+    btn.classList.add('active');
+    var target = container.querySelector('.geek-level-content[data-level="' + level + '"]');
+    if (target) target.classList.add('active');
   }
 
   function switchTab(btn) {
     var tabKey = btn.getAttribute('data-tab');
-    var container = btn.closest('#geek-view') || btn.closest('.geek-panel-content');
+    var container = btn.closest('.geek-level-content') || btn.closest('#geek-view');
     if (!container) return;
 
     container.querySelectorAll('.geek-tab').forEach(function (t) { t.classList.remove('active'); });
@@ -553,45 +648,14 @@
     return html;
   }
 
-  function showInception(linkEl) {
-    if (linkEl) linkEl.parentElement.style.display = 'none';
-
-    const geekView = document.getElementById('geek-view');
-    if (!geekView) return;
-
-    const block = document.createElement('div');
-    block.className = 'inception-block';
-    block.innerHTML =
-      '<div class="inception-header">THE PROMPT BEHIND THE PROMPT</div>' +
-      '<p class="inception-intro">This entire conversation &mdash; every question DangerStorm asked, every pushback, every insight &mdash; was driven by a system prompt. Here it is, annotated section by section. This is the actual prompt.</p>';
-
-    INCEPTION_SECTIONS.forEach(function (s) {
-      const escaped = s.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      block.innerHTML +=
-        '<div class="geek-section annotated inception-section">' +
-          '<pre class="geek-text">' + escaped + '</pre>' +
-          '<div class="geek-annotation">' +
-            '<span class="geek-ann-label">' + s.label + '</span>' +
-            '<p class="geek-ann-note">' + s.note + '</p>' +
-          '</div>' +
-        '</div>';
-    });
-
-    block.innerHTML +=
-      '<p class="inception-meta">This experience you just had? It was driven by a prompt too. Now you know how to write one.</p>';
-
-    geekView.appendChild(block);
-    block.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
   // ── Exports ────────────────────────────────────────────────────────────
 
   window.__geekMode = {
     exit: exitGeekMode,
-    showInception: showInception,
     launchOverlay: launchGeekOverlay,
     closeOverlay: closeGeekOverlay,
-    switchTab: switchTab
+    switchTab: switchTab,
+    switchLevel: switchLevel
   };
   window.triggerGeekPulse = triggerPulse;
   window.resetGeekMode = resetGeekMode;
