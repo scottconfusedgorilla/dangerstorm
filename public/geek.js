@@ -103,9 +103,34 @@
       note: "Structured output parsing. The ===MARKERS=== are a contract between the AI and the code. The frontend splits on these exact strings to extract each output into its own display block. Without them, you'd need fragile regex or manual copy-paste. This is the bridge between 'AI conversation' and 'usable product.'"
     },
     {
-      label: "Deck Structure",
-      text: "## OUTPUT 1 — DECK PROMPT STRUCTURE:\n\nSlide 1 — TITLE: Product name, domain, tagline, attribution\nSlide 2 — THE PROBLEM: What pain, who feels it, why unsolved\nSlide 3 — THE SOLUTION: Plain language + THE KEY INSIGHT\nSlide 4 — HOW IT WORKS: 3-4 steps of user experience\nSlide 5 — WHO BUYS IT: Primary + secondary audiences\nSlide 6 — REVENUE MODEL: How it makes money\nSlide 7 — STATUS & PROOF: Current status, validation\nSlide 8 — CLOSING: Name + domain + pitch + contact",
+      label: "Output 1 — Deck Structure",
+      text: "## OUTPUT 1 — DECK PROMPT STRUCTURE:\n\nGenerate a detailed prompt that will produce an 8-slide pitch deck when pasted into Claude or ChatGPT:\n\nSlide 1 — TITLE: Product name (large), domain, one-line tagline, \"[user's name or email] | [today's date]\"\nSlide 2 — THE PROBLEM: What pain, who feels it, why unsolved\nSlide 3 — THE SOLUTION: What it does in plain language, THE KEY INSIGHT that makes it different\nSlide 4 — HOW IT WORKS: 3-4 steps of user experience, each with icon concept + short title + one-line description\nSlide 5 — WHO BUYS IT: Primary audience, secondary audiences, why they'd pay\nSlide 6 — REVENUE MODEL: How it makes money, pricing tiers if applicable, unit economics at scale\nSlide 7 — STATUS & PROOF: Current status, any validation, what's needed next\nSlide 8 — CLOSING: Product name + domain, one-line pitch repeated, contact email",
       note: "Prompt-within-a-prompt. DangerStorm generates a prompt that another AI will execute. Each slide is specified with enough structure to prevent the downstream AI from improvising, but enough flexibility to adapt to any product. This is meta-prompting — the hardest and most powerful prompt engineering technique."
+    },
+    {
+      label: "Output 2 — Carrd Landing Page",
+      text: "===OUTPUT_2_START===\n[Carrd landing page copy — plain text, under 150 words. Headline (8 words max), subheadline, 3 benefit-focused bullets with **bold** lead word, social proof placeholder, CTA, footer. Carrd-compatible: **bold**, *italic*, [links](URL) only.]",
+      note: "Platform-specific constraints. Carrd.co only supports bold, italic, and links — no headers, no HTML, no lists. Specifying these real-world limitations prevents the AI from generating beautiful copy that can't actually be pasted into the target platform. The 150-word limit prevents verbosity."
+    },
+    {
+      label: "Output 3 — Kit Signup Form",
+      text: "===OUTPUT_3_START===\n[Kit signup form copy — Form headline (\"Be the first to know when [product] launches\"), description, email placeholder, button text, privacy line.]",
+      note: "Micro-copy engineering. Five tiny text fields that most founders agonize over for hours. By specifying the exact structure and giving an example headline format, the AI produces copy that's ready to paste directly into Kit (ConvertKit). The specificity ('button text', 'privacy line') prevents generic output."
+    },
+    {
+      label: "Output 4 — Intro Pitch",
+      text: "===OUTPUT_4_START===\n[One-paragraph introductory pitch — 3-5 sentences that you could read aloud to introduce this product to an investor or audience. Open with the problem, pivot to the solution, land on why it matters. Confident, polished, no jargon. Under 75 words.]",
+      note: "Narrative structure in 75 words. The instruction 'open with the problem, pivot to the solution, land on why it matters' prescribes a three-act structure within a single paragraph. 'You could read aloud' forces conversational language. Without 'no jargon', AI defaults to buzzwords."
+    },
+    {
+      label: "Output 5 — Summary Label",
+      text: "===OUTPUT_5_START===\n[One sentence summarizing the product idea, under 15 words. This is used as the saved idea label. Example: \"AI photo dating tool for scanned family archives\". Do NOT include the domain or product name — describe what it DOES.]",
+      note: "Internal utility output. Users never see this directly — it becomes the idea card description on the dashboard. The negative instruction ('do NOT include the domain or product name') prevents redundancy since those are displayed separately. The example anchors the format."
+    },
+    {
+      label: "Output 6 — Claude Code Build Prompt",
+      text: "===OUTPUT_6_START===\n[Claude Code build prompt — direct instructions for building an MVP. Specify tech stack, core features, user flow, UI direction. Under 30 lines. End with \"Build this as a working MVP.\"]",
+      note: "The most powerful output. This turns a product idea into a buildable specification. 'Under 30 lines' forces brutal prioritization — only the essential MVP scope survives. 'End with Build this as a working MVP' is the trigger phrase that tells Claude Code to actually execute, not just plan."
     },
     {
       label: "Design Constraints",
@@ -403,8 +428,8 @@
     var html =
       '<div class="geek-levels">' +
         '<button class="geek-level-tab active" data-level="0" onclick="window.__geekMode.switchLevel(this)"><span class="level-emoji">&#128269;</span> X-Ray</button>' +
-        '<button class="geek-level-tab" data-level="1" onclick="window.__geekMode.switchLevel(this)"><span class="level-emoji">&#9889;</span> System Prompt</button>' +
-        '<button class="geek-level-tab" data-level="2" onclick="window.__geekMode.switchLevel(this)"><span class="level-emoji">&#128165;</span> Full Inception</button>' +
+        '<button class="geek-level-tab" data-level="1" onclick="window.__geekMode.switchLevel(this)"><span class="level-emoji">&#128165;</span> Full Inception</button>' +
+        '<button class="geek-level-tab" data-level="2" onclick="window.__geekMode.switchLevel(this)"><span class="level-emoji">&#9889;</span> Help Prompt</button>' +
       '</div>' +
       '<div class="geek-level-content active" data-level="0">' + level0Html + '</div>' +
       '<div class="geek-level-content" data-level="1">' + level1Html + '</div>' +
@@ -452,18 +477,18 @@
 
   function buildLevel1() {
     var html = '<div class="inception-block" style="border:none;padding:0;margin:0;">' +
-      '<div class="inception-header">THE CONVERSATION PROMPT</div>' +
+      '<div class="inception-header">FULL INCEPTION &mdash; THE SYSTEM PROMPT</div>' +
       '<p class="inception-intro">This is the actual system prompt that drove your conversation. Every question DangerStorm asked, every pushback, every moment of excitement &mdash; all of it came from these instructions.</p>';
 
     INCEPTION_SECTIONS.forEach(function (s) {
       var escaped = esc(s.text);
       html +=
         '<div class="geek-section annotated inception-section">' +
-          '<pre class="geek-text">' + escaped + '</pre>' +
           '<div class="geek-annotation">' +
             '<span class="geek-ann-label">' + s.label + '</span>' +
             '<p class="geek-ann-note">' + s.note + '</p>' +
           '</div>' +
+          '<pre class="geek-text">' + escaped + '</pre>' +
         '</div>';
     });
 
@@ -481,11 +506,11 @@
       var escaped = esc(s.text);
       html +=
         '<div class="geek-section annotated inception-section">' +
-          '<pre class="geek-text">' + escaped + '</pre>' +
           '<div class="geek-annotation">' +
             '<span class="geek-ann-label">' + s.label + '</span>' +
             '<p class="geek-ann-note">' + s.note + '</p>' +
           '</div>' +
+          '<pre class="geek-text">' + escaped + '</pre>' +
         '</div>';
     });
 
@@ -618,11 +643,11 @@
         : esc(section.text);
       if (ann) {
         return '<div class="geek-section annotated">' +
-          '<pre class="geek-text">' + html + '</pre>' +
           '<div class="geek-annotation">' +
             '<span class="geek-ann-label">' + ann.label + '</span>' +
             '<p class="geek-ann-note">' + ann.note + '</p>' +
           '</div>' +
+          '<pre class="geek-text">' + html + '</pre>' +
         '</div>';
       }
       return '<div class="geek-section"><pre class="geek-text">' + html + '</pre></div>';
@@ -636,14 +661,14 @@
       : esc(text);
 
     var html = '<div class="geek-sections">';
-    html += '<div class="geek-section annotated">' +
-      '<pre class="geek-text">' + escaped + '</pre>';
+    html += '<div class="geek-section annotated">';
     if (ann) {
       html += '<div class="geek-annotation">' +
         '<span class="geek-ann-label">' + ann.subtitle + '</span>' +
         '<p class="geek-ann-note">' + ann.note + '</p>' +
       '</div>';
     }
+    html += '<pre class="geek-text">' + escaped + '</pre>';
     html += '</div></div>';
     return html;
   }

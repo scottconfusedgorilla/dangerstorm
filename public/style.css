@@ -2182,10 +2182,18 @@ h3.editable .inline-edit {
     margin-bottom: 12px;
 }
 
+.geek-annotation {
+    background: var(--geek-bg);
+    border: 1px solid var(--geek-border);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    padding: 8px 14px 10px;
+}
+
 .geek-text {
     background: var(--bg-light);
     border: 1px solid var(--border);
-    border-radius: 6px 6px 0 0;
+    border-radius: 0 0 6px 6px;
     padding: 12px 14px;
     font-size: 0.78rem;
     line-height: 1.6;
@@ -2198,14 +2206,6 @@ h3.editable .inline-edit {
 
 .geek-section:not(.annotated) .geek-text {
     border-radius: 6px;
-}
-
-.geek-annotation {
-    background: var(--geek-bg);
-    border: 1px solid var(--geek-border);
-    border-top: none;
-    border-radius: 0 0 6px 6px;
-    padding: 8px 14px 10px;
 }
 
 .geek-ann-label {
