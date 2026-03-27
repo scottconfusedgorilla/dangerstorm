@@ -294,19 +294,25 @@
     return false;
   }
 
-  function highlightPhrases(escapedHtml, sectionText, allMatches) {
-    var result = escapedHtml;
+  function esc(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function highlightPhrases(ignoredEscaped, sectionText, allMatches) {
+    // Work on RAW text with position indices, escape each segment individually
     var sectionLower = sectionText.toLowerCase();
 
+    // Find all matches within this section
     var sectionMatches = [];
     allMatches.forEach(function (match) {
       var searchIdx = 0;
+      var matchLower = match.text.toLowerCase();
       while (true) {
-        var idx = sectionLower.indexOf(match.text.toLowerCase(), searchIdx);
+        var idx = sectionLower.indexOf(matchLower, searchIdx);
         if (idx === -1) break;
         sectionMatches.push({
-          idx: idx,
-          text: sectionText.substring(idx, idx + match.text.length),
+          start: idx,
+          end: idx + match.text.length,
           source: match.source,
           fullMessage: match.fullMessage
         });
@@ -314,31 +320,38 @@
       }
     });
 
-    // Dedupe and sort by position descending
-    sectionMatches.sort(function (a, b) { return b.idx - a.idx; });
+    if (sectionMatches.length === 0) return esc(sectionText);
 
-    // Remove overlapping matches (keep longer ones)
-    var filtered = [];
-    sectionMatches.forEach(function (m) {
-      var dominated = false;
-      for (var i = 0; i < filtered.length; i++) {
-        if (m.idx < filtered[i].idx + filtered[i].text.length && m.idx + m.text.length > filtered[i].idx) {
-          dominated = true; break;
-        }
+    // Sort by start position, then by length descending (prefer longer matches)
+    sectionMatches.sort(function (a, b) { return a.start - b.start || (b.end - b.start) - (a.end - a.start); });
+
+    // Remove overlaps (keep first/longest)
+    var filtered = [sectionMatches[0]];
+    for (var i = 1; i < sectionMatches.length; i++) {
+      if (sectionMatches[i].start >= filtered[filtered.length - 1].end) {
+        filtered.push(sectionMatches[i]);
       }
-      if (!dominated) filtered.push(m);
-    });
+    }
 
+    // Build result by walking through the raw text
+    var result = '';
+    var cursor = 0;
     filtered.forEach(function (match) {
-      var escaped = match.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      var escapedMsg = match.fullMessage.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      var idx = result.lastIndexOf(escaped);
-      if (idx !== -1) {
-        var tooltip = 'From your input (' + match.source + ')';
-        var replacement = '<span class="geek-user-phrase" data-tooltip="' + tooltip + '" data-source="' + escapedMsg + '">' + escaped + '</span>';
-        result = result.substring(0, idx) + replacement + result.substring(idx + escaped.length);
+      // Text before this match
+      if (match.start > cursor) {
+        result += esc(sectionText.substring(cursor, match.start));
       }
+      // The highlighted match
+      var matchText = sectionText.substring(match.start, match.end);
+      var escapedMsg = match.fullMessage.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      var tooltip = 'From your input (' + match.source + ')';
+      result += '<span class="geek-user-phrase" data-tooltip="' + tooltip + '" data-source="' + escapedMsg + '">' + esc(matchText) + '</span>';
+      cursor = match.end;
     });
+    // Remaining text after last match
+    if (cursor < sectionText.length) {
+      result += esc(sectionText.substring(cursor));
+    }
 
     return result;
   }
@@ -505,29 +518,27 @@
 
     return '<div class="geek-sections">' + sections.map(function (section) {
       const ann = DECK_ANNOTATIONS[section.key];
-      var escaped = section.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      if (allMatches && allMatches.length > 0) {
-        escaped = highlightPhrases(escaped, section.text, allMatches);
-      }
+      var html = (allMatches && allMatches.length > 0)
+        ? highlightPhrases(null, section.text, allMatches)
+        : esc(section.text);
       if (ann) {
         return '<div class="geek-section annotated">' +
-          '<pre class="geek-text">' + escaped + '</pre>' +
+          '<pre class="geek-text">' + html + '</pre>' +
           '<div class="geek-annotation">' +
             '<span class="geek-ann-label">' + ann.label + '</span>' +
             '<p class="geek-ann-note">' + ann.note + '</p>' +
           '</div>' +
         '</div>';
       }
-      return '<div class="geek-section"><pre class="geek-text">' + escaped + '</pre></div>';
+      return '<div class="geek-section"><pre class="geek-text">' + html + '</pre></div>';
     }).join('') + '</div>';
   }
 
   function buildOutputAnnotatedView(outputKey, text, allMatches) {
     var ann = OUTPUT_ANNOTATIONS[outputKey];
-    var escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    if (allMatches && allMatches.length > 0) {
-      escaped = highlightPhrases(escaped, text, allMatches);
-    }
+    var escaped = (allMatches && allMatches.length > 0)
+      ? highlightPhrases(null, text, allMatches)
+      : esc(text);
 
     var html = '<div class="geek-sections">';
     html += '<div class="geek-section annotated">' +
