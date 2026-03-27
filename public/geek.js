@@ -42,31 +42,57 @@
     },
     design: {
       label: "Design Direction",
-      note: "'Make it look good' produces generic slides. Specific color palette, typography names, and the sandwich structure (dark/light/dark) forces a designed result. 'No bullet points on white backgrounds' directly counters Claude's default behavior."
+      note: "'Make it look good' produces generic results. Naming specific fonts, specific color strategies ('not generic blue'), and anti-patterns ('no bullet points on white backgrounds') gives the AI concrete constraints to design within. Constraints produce creativity — freedom produces mediocrity."
     }
   };
 
+  // The actual system prompt sections with annotations explaining WHY each part works
   const INCEPTION_SECTIONS = [
     {
-      text: "You are DangerStorm — a sharp product strategist who interviews founders and generates pitch deck prompts.",
-      note: "Role definition. Giving Claude a persona ('you are a sharp product strategist') produces sharper outputs than asking it to 'help with a pitch.' Identity shapes behavior."
+      label: "Identity & Voice",
+      text: "You are DangerStorm — a confident, direct, product-savvy AI that helps people turn product ideas into professional pitch deck prompts in under 90 seconds.\n\nYour voice: You talk like a senior product manager who's evaluated a thousand ideas and knows instantly what makes one work. Confident, direct, excited when you see a great angle, and willing to push back when something is vague.",
+      note: "Role definition. Giving an AI a specific persona produces dramatically different outputs than a generic request. 'You are a senior product manager' activates a completely different response pattern than 'help me with a pitch.' Identity shapes every word choice, every reaction, every judgment call."
     },
     {
-      text: "Ask only one question at a time. Be aggressive about extracting and remembering information from previous answers. If the answer is already clear, skip the question entirely.",
-      note: "Behavioral constraint. Without this rule, AI asks everything at once — efficient for the AI, terrible for the human. Single-question discipline is the hardest thing to make an AI do consistently."
+      label: "Conversation Rules",
+      text: "## CONVERSATION RULES (STRICT)\n\n1. Always ask ONLY ONE question per response. Never bundle questions.\n2. Be extremely aggressive about extracting info from previous answers. If the user already provided or strongly implied something, skip that question entirely — don't mention you skipped it.\n3. Max 5 total exchanges (including opener). Often 3–4 is enough.\n4. After each user reply: acknowledge/react conversationally, then either ask exactly one next question OR generate all three outputs if you have enough.",
+      note: "Behavioral constraints. Without rule #1, AI asks everything at once — efficient for the AI, terrible for the human. Rule #2 prevents the annoying 'you already told me this' problem. Rule #3 forces a bias toward action over interrogation. Rule #4 creates the conversational rhythm: acknowledge → react → advance."
     },
     {
-      text: "Push back when ideas are vague: \"That's too broad. What's the ONE thing it does best?\"",
-      note: "The pushback rule. This is what makes DangerStorm feel like a product person, not a form. Most AI assistants validate everything — this one challenges."
+      label: "Question Sequence",
+      text: "## CONVERSATION SEQUENCE (ask adaptively, never show as a list):\n\n1. Elevator pitch + domain (ask together in opener)\n2. Primary user / who buys it (only if not clear from pitch)\n3. Revenue model (only if not obvious)\n4. The one key differentiator / insight (almost always ask — it's the heart of Slide 3)\n5. Contact email for the slides\n6. Competitor/reference URL (truly optional)\n7. Current status (often inferable or skippable)",
+      note: "Adaptive sequencing. The parenthetical skip conditions are critical — they prevent the AI from robotically marching through every question. 'Only if not clear from pitch' teaches the AI to listen, not just ask. Most prompt engineers forget to tell the AI when NOT to do something."
     },
     {
-      text: "After 3–5 exchanges, generate three outputs: a pitch deck prompt, Carrd landing page copy, and a Kit signup form.",
-      note: "Exit condition. Without a clear 'when to stop asking and start generating,' AI interrogates you forever. This sets the upper bound and forces a bias toward output."
+      label: "Reaction Style",
+      text: "## REACTION STYLE:\n\n- Paraphrase to confirm: \"OK, so [domain] — [what it does]. I like the angle.\"\n- Push back if vague: \"That's still pretty broad. Nail the one thing it does better than anything else. What's that?\"\n- Show excitement: \"Boom — that's the insight nobody else has. That's your Slide 3 money.\"\n- If they give a URL: \"Got it — so this is similar to [X] but your angle is [differentiator]. Sharp.\"",
+      note: "Few-shot examples. Instead of saying 'be conversational,' the prompt shows exactly what that sounds like. These examples anchor the AI's tone — it will pattern-match against them for every response. The pushback example is especially important: it gives the AI permission to challenge the user, which most AI systems won't do unprompted."
+    },
+    {
+      label: "Output Markers",
+      text: "## WHEN YOU HAVE ENOUGH INFO (usually after 3-5 exchanges):\n\nGenerate ALL SIX outputs in one response. Use these exact markers so the frontend can parse them:\n\n===OUTPUT_1_START===\n[The complete deck prompt]\n===OUTPUT_1_END===\n\n===OUTPUT_2_START===\n[Carrd landing page copy]\n===OUTPUT_2_END===\n\n...and so on for all 6 outputs.",
+      note: "Structured output parsing. The ===MARKERS=== are a contract between the AI and the code. The frontend splits on these exact strings to extract each output into its own display block. Without them, you'd need fragile regex or manual copy-paste. This is the bridge between 'AI conversation' and 'usable product.'"
+    },
+    {
+      label: "Deck Structure",
+      text: "## OUTPUT 1 — DECK PROMPT STRUCTURE:\n\nSlide 1 — TITLE: Product name, domain, tagline, attribution\nSlide 2 — THE PROBLEM: What pain, who feels it, why unsolved\nSlide 3 — THE SOLUTION: Plain language + THE KEY INSIGHT\nSlide 4 — HOW IT WORKS: 3-4 steps of user experience\nSlide 5 — WHO BUYS IT: Primary + secondary audiences\nSlide 6 — REVENUE MODEL: How it makes money\nSlide 7 — STATUS & PROOF: Current status, validation\nSlide 8 — CLOSING: Name + domain + pitch + contact",
+      note: "Prompt-within-a-prompt. DangerStorm generates a prompt that another AI will execute. Each slide is specified with enough structure to prevent the downstream AI from improvising, but enough flexibility to adapt to any product. This is meta-prompting — the hardest and most powerful prompt engineering technique."
+    },
+    {
+      label: "Design Constraints",
+      text: "The prompt should also specify:\n- A bold color palette appropriate to the product category (not generic blue)\n- Dark title and closing slides, light content slides (sandwich structure)\n- Clean typography: Trebuchet MS or Georgia for headers, Calibri for body\n- Each slide must have a visual element\n- No bullet points on white backgrounds. Every slide should be designed, not just typed.\n- 16:9 format",
+      note: "'Make it look good' produces generic results. Naming specific fonts, specific color strategies ('not generic blue'), and anti-patterns ('no bullet points on white backgrounds') gives the AI concrete constraints to design within. Constraints produce creativity — freedom produces mediocrity."
+    },
+    {
+      label: "Guardrails",
+      text: "## IMPORTANT:\n- Never break character. You ARE DangerStorm.\n- Never show the question sequence as a list.\n- If the user says something off-topic, gently redirect.\n- Keep your conversational responses SHORT — 1-3 sentences max before asking the next question.\n- CRITICAL: When ready, generate ALL outputs in one response. Do not truncate or skip any slide.",
+      note: "Failure mode prevention. Every guardrail here addresses a specific way the AI tends to fail: breaking character when confused, revealing its internal structure, going verbose, or generating incomplete output. Good prompts anticipate failure modes and block them explicitly."
     }
   ];
 
   let geekModeActive = false;
   let outputsReady = false;
+  let storedConversation = null; // conversation history for phrase highlighting
 
   // ── Init (idea editor page — logo click) ───────────────────────────────
 
@@ -76,8 +102,9 @@
     brand.addEventListener('click', handleLogoClick);
   }
 
-  function triggerPulse() {
+  function triggerPulse(conversation) {
     outputsReady = true;
+    storedConversation = conversation || null;
     const bolt = document.querySelector('.header-bolt');
     const brand = document.querySelector('.header-brand');
     if (!bolt || !brand) return;
@@ -89,6 +116,7 @@
   function resetGeekMode() {
     outputsReady = false;
     geekModeActive = false;
+    storedConversation = null;
     const bolt = document.querySelector('.header-bolt');
     const brand = document.querySelector('.header-brand');
     if (bolt) { bolt.classList.remove('geek-pulse', 'geek-active'); }
@@ -108,14 +136,124 @@
     }
   }
 
+  // ── User phrase extraction ─────────────────────────────────────────────
+
+  function extractUserPhrases(conversation) {
+    if (!conversation || !conversation.length) return [];
+    var phrases = [];
+    conversation.forEach(function (msg, idx) {
+      if (msg.role !== 'user') return;
+      var text = typeof msg.content === 'string' ? msg.content : '';
+      if (!text) return;
+      // Extract meaningful phrases (4+ words, 20+ chars) by splitting on sentence boundaries
+      var sentences = text.split(/[.!?\n]+/).map(function (s) { return s.trim(); }).filter(function (s) { return s.length >= 20; });
+      // Also try the full message if short enough
+      if (text.length >= 20 && text.length <= 300) {
+        phrases.push({ text: text.trim(), source: 'Message ' + (idx + 1), fullMessage: text.trim() });
+      }
+      sentences.forEach(function (sentence) {
+        if (sentence.length >= 20 && sentence !== text.trim()) {
+          phrases.push({ text: sentence, source: 'Message ' + (idx + 1), fullMessage: text.trim() });
+        }
+      });
+    });
+    return phrases;
+  }
+
+  function findMatchingPhrases(promptText, userPhrases) {
+    // Find substrings from user input that appear (possibly paraphrased) in the prompt
+    // Strategy: look for exact multi-word matches (3+ consecutive words from user input)
+    var matches = [];
+    var promptLower = promptText.toLowerCase();
+
+    userPhrases.forEach(function (phrase) {
+      var words = phrase.text.split(/\s+/);
+      // Try progressively shorter word sequences, starting from the full phrase
+      for (var len = Math.min(words.length, 12); len >= 3; len--) {
+        for (var start = 0; start <= words.length - len; start++) {
+          var snippet = words.slice(start, start + len).join(' ');
+          if (snippet.length < 12) continue; // skip very short matches
+          var idx = promptLower.indexOf(snippet.toLowerCase());
+          if (idx !== -1) {
+            // Get the actual case from the prompt
+            var actual = promptText.substring(idx, idx + snippet.length);
+            // Check for overlaps with existing matches
+            var overlaps = false;
+            for (var m = 0; m < matches.length; m++) {
+              if (idx >= matches[m].start && idx < matches[m].end) { overlaps = true; break; }
+              if (idx + snippet.length > matches[m].start && idx + snippet.length <= matches[m].end) { overlaps = true; break; }
+              if (idx <= matches[m].start && idx + snippet.length >= matches[m].end) { overlaps = true; break; }
+            }
+            if (!overlaps) {
+              matches.push({
+                start: idx,
+                end: idx + snippet.length,
+                text: actual,
+                source: phrase.source,
+                fullMessage: phrase.fullMessage
+              });
+            }
+          }
+        }
+      }
+    });
+
+    // Sort by position
+    matches.sort(function (a, b) { return a.start - b.start; });
+    return matches;
+  }
+
+  function highlightPhrases(escapedHtml, sectionText, allMatches) {
+    // Find matches that fall within this section's text range in the original prompt
+    // We work on the escaped HTML, so we need to account for entity expansion
+    // Simpler approach: find matches directly in the escaped text
+    var result = escapedHtml;
+    var sectionLower = sectionText.toLowerCase();
+
+    // Collect matches relevant to this section
+    var sectionMatches = [];
+    allMatches.forEach(function (match) {
+      var idx = sectionLower.indexOf(match.text.toLowerCase());
+      if (idx !== -1) {
+        sectionMatches.push({
+          text: sectionText.substring(idx, idx + match.text.length),
+          source: match.source,
+          fullMessage: match.fullMessage
+        });
+      }
+    });
+
+    // Apply highlights (work backwards to preserve indices)
+    sectionMatches.reverse().forEach(function (match) {
+      var escaped = match.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      var escapedMsg = match.fullMessage.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      var idx = result.indexOf(escaped);
+      if (idx !== -1) {
+        var tooltip = 'From your input (' + match.source + ')';
+        var replacement = '<span class="geek-user-phrase" data-tooltip="' + tooltip + '" data-source="' + escapedMsg + '">' + escaped + '</span>';
+        result = result.substring(0, idx) + replacement + result.substring(idx + escaped.length);
+      }
+    });
+
+    return result;
+  }
+
   // ── Core rendering (shared between editor + overlay) ───────────────────
 
-  function renderGeekView(promptText) {
+  function renderGeekView(promptText, conversation) {
+    var userPhrases = extractUserPhrases(conversation);
+    var allMatches = findMatchingPhrases(promptText, userPhrases);
+
+    var legendHtml = allMatches.length > 0
+      ? '<div class="geek-legend"><span class="geek-legend-swatch"></span> Highlighted text = phrases from your input (hover to see source)</div>'
+      : '';
+
     var html =
       '<div class="geek-bar">' +
         '<span class="geek-bar-title">&#9889; X-RAY MODE &mdash; Why this prompt works</span>' +
       '</div>' +
-      '<div class="geek-sections">' + buildAnnotatedView(promptText) + '</div>' +
+      legendHtml +
+      '<div class="geek-sections">' + buildAnnotatedView(promptText, allMatches) + '</div>' +
       '<div class="geek-deeper-wrap">' +
         '<a href="#" class="geek-deeper-link" onclick="event.preventDefault();window.__geekMode.showInception(this)">Go deeper &rarr; see the prompt that drives DangerStorm itself</a>' +
       '</div>';
@@ -140,7 +278,7 @@
 
     const geekView = document.createElement('div');
     geekView.id = 'geek-view';
-    geekView.innerHTML = renderGeekView(text) +
+    geekView.innerHTML = renderGeekView(text, storedConversation) +
       '<div style="text-align:center;margin-top:8px;">' +
         '<button class="geek-close-btn" onclick="window.__geekMode.exit()">Exit X-ray</button>' +
       '</div>';
@@ -161,7 +299,7 @@
 
   // ── Dashboard overlay mode ─────────────────────────────────────────────
 
-  function launchGeekOverlay(promptText, ideaName) {
+  function launchGeekOverlay(promptText, ideaName, conversation) {
     var overlay = document.getElementById('geek-overlay');
     if (!overlay) return;
 
@@ -172,7 +310,7 @@
     if (content) {
       var geekView = document.createElement('div');
       geekView.id = 'geek-view';
-      geekView.innerHTML = renderGeekView(promptText);
+      geekView.innerHTML = renderGeekView(promptText, conversation);
       content.innerHTML = '';
       content.appendChild(geekView);
     }
@@ -192,7 +330,7 @@
 
   // ── Shared helpers ─────────────────────────────────────────────────────
 
-  function buildAnnotatedView(text) {
+  function buildAnnotatedView(text, allMatches) {
     const sections = [];
     const firstSlide = text.search(/SLIDE 1/i);
 
@@ -218,7 +356,10 @@
 
     return sections.map(function (section) {
       const ann = ANNOTATIONS[section.key];
-      const escaped = section.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      var escaped = section.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      if (allMatches && allMatches.length > 0) {
+        escaped = highlightPhrases(escaped, section.text, allMatches);
+      }
       if (ann) {
         return '<div class="geek-section annotated">' +
           '<pre class="geek-text">' + escaped + '</pre>' +
@@ -242,7 +383,7 @@
     block.className = 'inception-block';
     block.innerHTML =
       '<div class="inception-header">THE PROMPT BEHIND THE PROMPT</div>' +
-      '<p class="inception-intro">This entire conversation &mdash; every question DangerStorm asked, every pushback, every insight &mdash; was generated by following a prompt. Here are the key rules that drove it.</p>';
+      '<p class="inception-intro">This entire conversation &mdash; every question DangerStorm asked, every pushback, every insight &mdash; was driven by a system prompt. Here it is, annotated section by section. This is the actual prompt.</p>';
 
     INCEPTION_SECTIONS.forEach(function (s) {
       const escaped = s.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -250,13 +391,14 @@
         '<div class="geek-section annotated inception-section">' +
           '<pre class="geek-text">' + escaped + '</pre>' +
           '<div class="geek-annotation">' +
+            '<span class="geek-ann-label">' + s.label + '</span>' +
             '<p class="geek-ann-note">' + s.note + '</p>' +
           '</div>' +
         '</div>';
     });
 
     block.innerHTML +=
-      '<p class="inception-meta">You just built one yourself.</p>';
+      '<p class="inception-meta">This experience you just had? It was driven by a prompt too. Now you know how to write one.</p>';
 
     geekView.appendChild(block);
     block.scrollIntoView({ behavior: 'smooth', block: 'start' });

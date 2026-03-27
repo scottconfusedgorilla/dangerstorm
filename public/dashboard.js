@@ -137,7 +137,7 @@ async function launchGeekFromCard(ideaId, ideaName) {
             dsAlert("This idea doesn't have a generated prompt yet. Open it and complete the conversation first.");
             return;
         }
-        window.__geekMode.launchOverlay(versions[0].outputs.output1, ideaName);
+        window.__geekMode.launchOverlay(versions[0].outputs.output1, ideaName, versions[0].conversation);
     } catch (err) {
         dsAlert("Couldn't load idea outputs: " + err.message);
     }
