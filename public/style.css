@@ -2270,8 +2270,8 @@ h3.editable .inline-edit {
 }
 
 .inception-section .geek-text {
-    font-style: italic;
-    color: var(--text-muted);
+    font-style: normal;
+    color: var(--text);
 }
 
 .inception-meta {
