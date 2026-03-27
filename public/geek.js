@@ -411,6 +411,56 @@
     }
   ];
 
+  // ── The Rabbit Hole: CLAUDE.md — the prompt that built DangerStorm ────
+
+  const RABBIT_HOLE_SECTIONS = [
+    {
+      label: "The Design Brief",
+      text: "# DangerStorm.net — Design Brief\n\nYou are building the MVP of DangerStorm.net — a conversational tool that takes a product idea and a domain name and generates a professional product pitch deck, similar to the Atomic Maple product portfolio format.\n\nThe user visits dangerstorm.net. No signup required. They give it a product idea and a domain. DangerStorm interviews them briefly (one question at a time), then generates a complete prompt they can paste into Claude or ChatGPT to produce a polished 8-slide product pitch deck.\n\nThis is a tool for product people who have ideas faster than they can document them. One idea, one domain, 90 seconds, one deck.",
+      note: "This is a CLAUDE.md file — a set of instructions that Claude Code (an AI coding assistant) reads before writing any code. Everything you see on DangerStorm was built by an AI reading this document. The opening paragraph establishes the product vision in three sentences. An AI building software needs the same clarity a human developer does — maybe more."
+    },
+    {
+      label: "Build Number Protocol",
+      text: "## BUILD NUMBER\nThere is a visible build number on the home screen in public/index.html (class build-number). Increment the build number on every deploy. Format: build NNN. Current: build 004.",
+      note: "A tiny operational rule with outsized impact. Without this, the AI would deploy changes without any visible versioning. 'Current: build 004' was the starting point — every build since has been tracked. This is how you teach an AI to follow a process, not just write code."
+    },
+    {
+      label: "Conversation Flow Rules",
+      text: "## THE CONVERSATION FLOW (strict single-question rule)\n\n- Always ask only one question per response\n- Be extremely aggressive about extracting and remembering information from previous answers\n- Start with the opener that combines the two most important pieces\n- Core sequence: Elevator pitch + domain, Primary user, Revenue model, Key differentiator, Competitor URL, Current status\n- After each user reply: extract details, acknowledge conversationally, then ask exactly one next question OR generate outputs\n- Never ask more than one question in a single response\n- Max total questions: 5. Often 3–4 is plenty",
+      note: "This section was written for the human designer (me) but Claude Code turned it into the system prompt you saw in the Full Inception tab. The CLAUDE.md describes WHAT the conversation should feel like. The system prompt (server.py) describes HOW to make the AI do it. Two prompts, two purposes, same vision."
+    },
+    {
+      label: "Tech Stack Decisions",
+      text: "## TECH STACK\n\n- Single-page web app. HTML/CSS/JS or React, your choice.\n- Use the Anthropic API (Claude) for the conversational flow.\n- No database needed for MVP. No signup. No accounts.\n- Mobile-friendly. Clean, bold UI.\n- Color scheme: Dark background (#0F172A), electric orange accent (#F97316), white text.\n- The conversation should feel like talking to a sharp product strategist, not filling out a form.",
+      note: "'Your choice' gave the AI freedom to pick the simplest approach — it chose vanilla HTML/CSS/JS over React. 'No database needed for MVP' prevented over-engineering. The color scheme (#0F172A, #F97316) was specified here and appears everywhere you look. One line in a markdown file → every pixel on screen."
+    },
+    {
+      label: "Critical Design Principles",
+      text: "## CRITICAL DESIGN PRINCIPLES\n\n- This is a conversation, not a wizard. No progress bars. No step indicators. Just a chat.\n- The AI should feel like an experienced product person who immediately sees the angle.\n- Never ask more than one question at a time.\n- The AI should push back if the idea is vague: \"That's too broad. What's the ONE thing it does?\"\n- The generated prompt should be visible in full, not behind a modal or accordion.\n- The copy button must work on mobile.\n- The whole experience should take under 90 seconds.",
+      note: "Anti-patterns are as important as patterns. 'No progress bars. No step indicators.' prevents the AI from building a typical form wizard. 'Not behind a modal or accordion' prevents hiding the output. Each negative instruction blocks a specific default behavior that AI coding assistants tend toward."
+    },
+    {
+      label: "Personality Specification",
+      text: "## PERSONALITY\n\nDangerStorm's voice is confident, direct, and product-savvy. It talks like a senior product manager who's evaluated a thousand ideas and knows instantly what makes one work.\n\n- Example opener: \"Alright, hit me. What's the product? Give me the elevator pitch in one or two sentences, and what's the domain?\"\n- Example pushback: \"That's still pretty broad. Nail the one thing it does better than anything else. What's that?\"\n- Example excitement: \"Boom — that's the insight nobody else has. That's your Slide 3 money.\"",
+      note: "Few-shot examples in a build spec. These example phrases weren't just for the developer to understand tone — Claude Code used them to craft the system prompt. The examples in CLAUDE.md became the examples in the system prompt, which became the examples the AI follows in conversation. Instructions echoing through three layers."
+    },
+    {
+      label: "Success Criteria",
+      text: "## WHAT SUCCESS LOOKS LIKE\n\nA product person with an idea and a domain visits dangerstorm.net, has a 90-second conversation, and gets a prompt that produces a professional 8-slide product pitch deck from any AI tool. The deck looks like it was made by someone who spent a week on it, not 90 seconds.",
+      note: "The most important section in the entire document. Everything else is implementation detail — this is the north star. When an AI is building software, it needs to know what 'done' looks like. Without this, it optimizes for code quality. With this, it optimizes for the user experience."
+    },
+    {
+      label: "Future Vision (Not Built Yet)",
+      text: "## FUTURE: PRO VERSION (NOT MVP)\n\nPro users log in with Google SSO. Their conversation context is preserved. Session history is tied to their Google account. Pro becomes a product idea management tool. Users build a library of product ideas, each with its generated deck prompt, Carrd copy, and Kit form.\n\nOne-click integration with Atomic Maple: when an idea is ready, the user can list it directly on atomicmaple.vc.\n\n- DangerStorm free = one idea, one session, copy your outputs.\n- DangerStorm Pro = your product idea portfolio, with a pipeline to Atomic Maple.\n\nNOT for MVP — MVP is zero-auth, stateless, single session.",
+      note: "Scope control. Telling the AI what NOT to build is just as important as telling it what to build. 'NOT for MVP' in caps prevents feature creep. But including the vision lets the AI make architectural decisions that won't block the future — like structuring data in a way that could later support accounts."
+    },
+    {
+      label: "The Closing Line",
+      text: "One idea. One domain. One deck. Go.",
+      note: "Four words. This is the tagline, the mission statement, and the build constraint all in one. Every feature decision filters through this: does it serve 'one idea, one domain, one deck'? If not, it doesn't ship."
+    }
+  ];
+
   // ── Core rendering (shared between editor + overlay) ───────────────────
 
   function renderGeekView(outputs, conversation) {
@@ -425,15 +475,20 @@
     // ── Level 2: Help prompt ──
     var level2Html = buildLevel2();
 
+    // ── Level 3: The Rabbit Hole ──
+    var level3Html = buildLevel3();
+
     var html =
       '<div class="geek-levels">' +
         '<button class="geek-level-tab active" data-level="0" onclick="window.__geekMode.switchLevel(this)"><span class="level-emoji">&#128269;</span> X-Ray</button>' +
         '<button class="geek-level-tab" data-level="1" onclick="window.__geekMode.switchLevel(this)"><span class="level-emoji">&#128165;</span> Full Inception</button>' +
         '<button class="geek-level-tab" data-level="2" onclick="window.__geekMode.switchLevel(this)"><span class="level-emoji">&#9889;</span> Help Prompt</button>' +
+        '<button class="geek-level-tab" data-level="3" onclick="window.__geekMode.switchLevel(this)"><span class="level-emoji">&#128007;</span> The Rabbit Hole</button>' +
       '</div>' +
       '<div class="geek-level-content active" data-level="0">' + level0Html + '</div>' +
       '<div class="geek-level-content" data-level="1">' + level1Html + '</div>' +
-      '<div class="geek-level-content" data-level="2">' + level2Html + '</div>';
+      '<div class="geek-level-content" data-level="2">' + level2Html + '</div>' +
+      '<div class="geek-level-content" data-level="3">' + level3Html + '</div>';
     return html;
   }
 
@@ -515,6 +570,28 @@
     });
 
     html += '<p class="inception-meta">Two prompts. Two personalities. One AI. That\'s the power of prompt engineering.</p>';
+    html += '</div>';
+    return html;
+  }
+
+  function buildLevel3() {
+    var html = '<div class="inception-block" style="border:none;padding:0;margin:0;">' +
+      '<div class="inception-header">THE RABBIT HOLE &mdash; CLAUDE.MD</div>' +
+      '<p class="inception-intro">Everything you just explored &mdash; the conversation AI, the system prompt, the help bot &mdash; was built by another AI. Claude Code read a file called CLAUDE.md and wrote all the code. Here is that file, annotated.</p>';
+
+    RABBIT_HOLE_SECTIONS.forEach(function (s) {
+      var escaped = esc(s.text);
+      html +=
+        '<div class="geek-section annotated inception-section">' +
+          '<div class="geek-annotation">' +
+            '<span class="geek-ann-label">' + s.label + '</span>' +
+            '<p class="geek-ann-note">' + s.note + '</p>' +
+          '</div>' +
+          '<pre class="geek-text">' + escaped + '</pre>' +
+        '</div>';
+    });
+
+    html += '<p class="inception-meta">A human wrote a markdown file. An AI read it and built a product. That product teaches you how to write prompts. It\'s prompts all the way down.</p>';
     html += '</div>';
     return html;
   }
