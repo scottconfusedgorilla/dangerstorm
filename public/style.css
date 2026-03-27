@@ -2376,6 +2376,48 @@ h3.editable .inline-edit {
     padding-top: 0;
 }
 
+/* ── Geek Mode: Output tabs ──────────────────────────────────────────── */
+
+.geek-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.geek-tab {
+    background: rgba(0, 255, 65, 0.05);
+    border: 1px solid var(--geek-border);
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.geek-tab:hover {
+    color: var(--geek-accent);
+    border-color: var(--geek-accent);
+}
+
+.geek-tab.active {
+    background: rgba(0, 255, 65, 0.15);
+    color: var(--geek-accent);
+    border-color: var(--geek-accent);
+    box-shadow: 0 0 8px rgba(0, 255, 65, 0.15);
+}
+
+.geek-tab-content {
+    display: none;
+}
+
+.geek-tab-content.active {
+    display: block;
+}
+
 /* ── Geek Mode: User phrase highlighting ──────────────────────────────── */
 
 .geek-legend {
@@ -2402,17 +2444,19 @@ h3.editable .inline-edit {
 }
 
 .geek-user-phrase {
-    background: rgba(0, 180, 255, 0.15);
-    border-bottom: 1px dashed rgba(0, 180, 255, 0.6);
+    background: rgba(0, 180, 255, 0.22);
+    border-bottom: 2px solid rgba(0, 180, 255, 0.7);
     border-radius: 2px;
-    padding: 0 2px;
+    padding: 1px 3px;
     cursor: help;
     position: relative;
     transition: background 0.15s;
+    color: #8CDBFF;
 }
 
 .geek-user-phrase:hover {
-    background: rgba(0, 180, 255, 0.30);
+    background: rgba(0, 180, 255, 0.40);
+    color: #B8EAFF;
 }
 
 .geek-user-phrase:hover::after {

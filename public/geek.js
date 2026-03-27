@@ -3,7 +3,10 @@
 // or via the Geek Mode button on dashboard cards
 
 (function () {
-  const ANNOTATIONS = {
+
+  // ── Annotations for the deck prompt slides ─────────────────────────────
+
+  const DECK_ANNOTATIONS = {
     intro: {
       label: "The Setup",
       note: "Context-first framing. The AI is told what to produce before it reads any details. This front-loads the output type so every downstream decision filters through 'I'm building a pitch deck' — not 'I'm answering a question.'"
@@ -46,7 +49,33 @@
     }
   };
 
-  // The actual system prompt sections with annotations explaining WHY each part works
+  // ── Annotations for the other outputs ──────────────────────────────────
+
+  const OUTPUT_ANNOTATIONS = {
+    output4: {
+      title: "INTRO PITCH",
+      subtitle: "The 75-word elevator pitch paragraph",
+      note: "This output is constrained to 3-5 sentences, under 75 words. The structure is prescribed: open with the problem, pivot to the solution, land on why it matters. Without these constraints, AI produces either a single vague sentence or a 300-word essay. The word limit forces every sentence to earn its place."
+    },
+    output2: {
+      title: "CARRD LANDING PAGE COPY",
+      subtitle: "Ready-to-paste copy for a one-page Carrd.co site",
+      note: "This output follows Carrd's actual formatting constraints: no headers, no HTML, just bold/italic/links. The structure (headline → subheadline → 3 bullets → social proof → CTA → footer) mirrors every high-converting landing page. The 150-word limit prevents AI from writing a novel when you need a billboard."
+    },
+    output3: {
+      title: "KIT SIGNUP FORM COPY",
+      subtitle: "Email capture form for Kit (ConvertKit)",
+      note: "Five micro-copy elements that most people agonize over: headline, description, placeholder, button text, and privacy line. Each one is constrained to be specific and action-oriented. 'Get early access' converts better than 'Submit' because it tells people what they're getting, not what they're doing."
+    },
+    output6: {
+      title: "CLAUDE CODE BUILD PROMPT",
+      subtitle: "Direct instructions for an AI to build the MVP",
+      note: "This is the most powerful output. It takes everything DangerStorm learned about your product and translates it into build instructions: tech stack, core features, user flow, UI direction. Under 30 lines, ending with 'Build this as a working MVP.' This is a prompt that produces a working product — meta-prompting at its most practical."
+    }
+  };
+
+  // ── Actual system prompt sections for inception ─────────────────────────
+
   const INCEPTION_SECTIONS = [
     {
       label: "Identity & Voice",
@@ -92,7 +121,8 @@
 
   let geekModeActive = false;
   let outputsReady = false;
-  let storedConversation = null; // conversation history for phrase highlighting
+  let storedConversation = null;
+  let storedOutputs = null;
 
   // ── Init (idea editor page — logo click) ───────────────────────────────
 
@@ -105,6 +135,14 @@
   function triggerPulse(conversation) {
     outputsReady = true;
     storedConversation = conversation || null;
+    // Grab all outputs from the DOM for editor-page use
+    storedOutputs = {
+      output1: (document.getElementById('output-1-content') || {}).textContent || '',
+      output2: (document.getElementById('output-2-content') || {}).textContent || '',
+      output3: (document.getElementById('output-3-content') || {}).textContent || '',
+      output4: (document.getElementById('output-4-content') || {}).textContent || '',
+      output6: (document.getElementById('output-6-content') || {}).textContent || ''
+    };
     const bolt = document.querySelector('.header-bolt');
     const brand = document.querySelector('.header-brand');
     if (!bolt || !brand) return;
@@ -117,6 +155,7 @@
     outputsReady = false;
     geekModeActive = false;
     storedConversation = null;
+    storedOutputs = null;
     const bolt = document.querySelector('.header-bolt');
     const brand = document.querySelector('.header-brand');
     if (bolt) { bolt.classList.remove('geek-pulse', 'geek-active'); }
@@ -141,50 +180,95 @@
   function extractUserPhrases(conversation) {
     if (!conversation || !conversation.length) return [];
     var phrases = [];
-    conversation.forEach(function (msg, idx) {
+    var msgNum = 0;
+    conversation.forEach(function (msg) {
       if (msg.role !== 'user') return;
+      msgNum++;
       var text = typeof msg.content === 'string' ? msg.content : '';
       if (!text) return;
-      // Extract meaningful phrases (4+ words, 20+ chars) by splitting on sentence boundaries
-      var sentences = text.split(/[.!?\n]+/).map(function (s) { return s.trim(); }).filter(function (s) { return s.length >= 20; });
-      // Also try the full message if short enough
-      if (text.length >= 20 && text.length <= 300) {
-        phrases.push({ text: text.trim(), source: 'Message ' + (idx + 1), fullMessage: text.trim() });
-      }
-      sentences.forEach(function (sentence) {
-        if (sentence.length >= 20 && sentence !== text.trim()) {
-          phrases.push({ text: sentence, source: 'Message ' + (idx + 1), fullMessage: text.trim() });
+      var label = 'Message ' + msgNum;
+
+      // Extract individual tokens: emails, domains, proper names, URLs
+      // Emails
+      var emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+      if (emailMatch) emailMatch.forEach(function (e) {
+        phrases.push({ text: e, source: label, fullMessage: text.trim(), type: 'email' });
+      });
+
+      // Domains (word.tld patterns)
+      var domainMatch = text.match(/[a-zA-Z0-9-]+\.(?:com|net|org|io|co|ai|app|dev|xyz|vc|me|info|biz|us|ca|uk)/gi);
+      if (domainMatch) domainMatch.forEach(function (d) {
+        phrases.push({ text: d, source: label, fullMessage: text.trim(), type: 'domain' });
+      });
+
+      // Split on common delimiters to find distinct phrases/names
+      var chunks = text.split(/[,.\n;:!?]+/).map(function (s) { return s.trim(); }).filter(function (s) { return s.length >= 3; });
+      chunks.forEach(function (chunk) {
+        // Short chunks (3-19 chars) — likely names, single terms
+        if (chunk.length >= 3 && chunk.length < 20) {
+          phrases.push({ text: chunk, source: label, fullMessage: text.trim(), type: 'short' });
+        }
+        // Longer chunks — sentence-level phrases
+        if (chunk.length >= 20) {
+          phrases.push({ text: chunk, source: label, fullMessage: text.trim(), type: 'phrase' });
         }
       });
+
+      // Also the full message for multi-word matching
+      if (text.trim().length >= 10) {
+        phrases.push({ text: text.trim(), source: label, fullMessage: text.trim(), type: 'full' });
+      }
     });
     return phrases;
   }
 
   function findMatchingPhrases(promptText, userPhrases) {
-    // Find substrings from user input that appear (possibly paraphrased) in the prompt
-    // Strategy: look for exact multi-word matches (3+ consecutive words from user input)
     var matches = [];
     var promptLower = promptText.toLowerCase();
 
     userPhrases.forEach(function (phrase) {
+      // For short items (names, domains, emails): exact match, case-insensitive
+      if (phrase.type === 'email' || phrase.type === 'domain' || phrase.type === 'short') {
+        var searchTerm = phrase.text.toLowerCase();
+        if (searchTerm.length < 3) return;
+        var startIdx = 0;
+        while (true) {
+          var idx = promptLower.indexOf(searchTerm, startIdx);
+          if (idx === -1) break;
+          // For short matches, require word boundaries to avoid false positives
+          if (phrase.type === 'short' && phrase.text.length < 8) {
+            var before = idx > 0 ? promptText[idx - 1] : ' ';
+            var after = idx + searchTerm.length < promptText.length ? promptText[idx + searchTerm.length] : ' ';
+            if (/[a-zA-Z0-9]/.test(before) || /[a-zA-Z0-9]/.test(after)) {
+              startIdx = idx + 1;
+              continue;
+            }
+          }
+          var actual = promptText.substring(idx, idx + searchTerm.length);
+          if (!hasOverlap(matches, idx, idx + searchTerm.length)) {
+            matches.push({
+              start: idx,
+              end: idx + searchTerm.length,
+              text: actual,
+              source: phrase.source,
+              fullMessage: phrase.fullMessage
+            });
+          }
+          startIdx = idx + searchTerm.length;
+        }
+        return;
+      }
+
+      // For longer phrases: sliding window of word sequences
       var words = phrase.text.split(/\s+/);
-      // Try progressively shorter word sequences, starting from the full phrase
-      for (var len = Math.min(words.length, 12); len >= 3; len--) {
+      for (var len = Math.min(words.length, 12); len >= 2; len--) {
         for (var start = 0; start <= words.length - len; start++) {
           var snippet = words.slice(start, start + len).join(' ');
-          if (snippet.length < 12) continue; // skip very short matches
+          if (snippet.length < 8) continue;
           var idx = promptLower.indexOf(snippet.toLowerCase());
           if (idx !== -1) {
-            // Get the actual case from the prompt
             var actual = promptText.substring(idx, idx + snippet.length);
-            // Check for overlaps with existing matches
-            var overlaps = false;
-            for (var m = 0; m < matches.length; m++) {
-              if (idx >= matches[m].start && idx < matches[m].end) { overlaps = true; break; }
-              if (idx + snippet.length > matches[m].start && idx + snippet.length <= matches[m].end) { overlaps = true; break; }
-              if (idx <= matches[m].start && idx + snippet.length >= matches[m].end) { overlaps = true; break; }
-            }
-            if (!overlaps) {
+            if (!hasOverlap(matches, idx, idx + snippet.length)) {
               matches.push({
                 start: idx,
                 end: idx + snippet.length,
@@ -198,36 +282,57 @@
       }
     });
 
-    // Sort by position
     matches.sort(function (a, b) { return a.start - b.start; });
     return matches;
   }
 
+  function hasOverlap(matches, start, end) {
+    for (var i = 0; i < matches.length; i++) {
+      var m = matches[i];
+      if (start < m.end && end > m.start) return true;
+    }
+    return false;
+  }
+
   function highlightPhrases(escapedHtml, sectionText, allMatches) {
-    // Find matches that fall within this section's text range in the original prompt
-    // We work on the escaped HTML, so we need to account for entity expansion
-    // Simpler approach: find matches directly in the escaped text
     var result = escapedHtml;
     var sectionLower = sectionText.toLowerCase();
 
-    // Collect matches relevant to this section
     var sectionMatches = [];
     allMatches.forEach(function (match) {
-      var idx = sectionLower.indexOf(match.text.toLowerCase());
-      if (idx !== -1) {
+      var searchIdx = 0;
+      while (true) {
+        var idx = sectionLower.indexOf(match.text.toLowerCase(), searchIdx);
+        if (idx === -1) break;
         sectionMatches.push({
+          idx: idx,
           text: sectionText.substring(idx, idx + match.text.length),
           source: match.source,
           fullMessage: match.fullMessage
         });
+        searchIdx = idx + match.text.length;
       }
     });
 
-    // Apply highlights (work backwards to preserve indices)
-    sectionMatches.reverse().forEach(function (match) {
+    // Dedupe and sort by position descending
+    sectionMatches.sort(function (a, b) { return b.idx - a.idx; });
+
+    // Remove overlapping matches (keep longer ones)
+    var filtered = [];
+    sectionMatches.forEach(function (m) {
+      var dominated = false;
+      for (var i = 0; i < filtered.length; i++) {
+        if (m.idx < filtered[i].idx + filtered[i].text.length && m.idx + m.text.length > filtered[i].idx) {
+          dominated = true; break;
+        }
+      }
+      if (!dominated) filtered.push(m);
+    });
+
+    filtered.forEach(function (match) {
       var escaped = match.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       var escapedMsg = match.fullMessage.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      var idx = result.indexOf(escaped);
+      var idx = result.lastIndexOf(escaped);
       if (idx !== -1) {
         var tooltip = 'From your input (' + match.source + ')';
         var replacement = '<span class="geek-user-phrase" data-tooltip="' + tooltip + '" data-source="' + escapedMsg + '">' + escaped + '</span>';
@@ -240,24 +345,69 @@
 
   // ── Core rendering (shared between editor + overlay) ───────────────────
 
-  function renderGeekView(promptText, conversation) {
+  function renderGeekView(outputs, conversation) {
     var userPhrases = extractUserPhrases(conversation);
-    var allMatches = findMatchingPhrases(promptText, userPhrases);
 
-    var legendHtml = allMatches.length > 0
-      ? '<div class="geek-legend"><span class="geek-legend-swatch"></span> Highlighted text = phrases from your input (hover to see source)</div>'
-      : '';
+    // Build tabs for each output
+    var tabs = [];
+    if (outputs.output1) tabs.push({ key: 'output1', label: 'Pitch Deck Prompt' });
+    if (outputs.output6) tabs.push({ key: 'output6', label: 'Build Prompt' });
+    if (outputs.output4) tabs.push({ key: 'output4', label: 'Intro Pitch' });
+    if (outputs.output2) tabs.push({ key: 'output2', label: 'Landing Page' });
+    if (outputs.output3) tabs.push({ key: 'output3', label: 'Signup Form' });
+
+    var tabBarHtml = '';
+    if (tabs.length > 1) {
+      tabBarHtml = '<div class="geek-tabs">';
+      tabs.forEach(function (tab, i) {
+        tabBarHtml += '<button class="geek-tab' + (i === 0 ? ' active' : '') + '" data-tab="' + tab.key + '" onclick="window.__geekMode.switchTab(this)">' + tab.label + '</button>';
+      });
+      tabBarHtml += '</div>';
+    }
+
+    // Build content for each tab
+    var tabContentHtml = '';
+    tabs.forEach(function (tab, i) {
+      var text = outputs[tab.key];
+      var allMatches = findMatchingPhrases(text, userPhrases);
+
+      var legendHtml = allMatches.length > 0
+        ? '<div class="geek-legend"><span class="geek-legend-swatch"></span> Highlighted = from your input (hover for source)</div>'
+        : '';
+
+      var bodyHtml = '';
+      if (tab.key === 'output1') {
+        bodyHtml = buildDeckAnnotatedView(text, allMatches);
+      } else {
+        bodyHtml = buildOutputAnnotatedView(tab.key, text, allMatches);
+      }
+
+      tabContentHtml += '<div class="geek-tab-content' + (i === 0 ? ' active' : '') + '" data-tab="' + tab.key + '">' +
+        legendHtml + bodyHtml + '</div>';
+    });
 
     var html =
       '<div class="geek-bar">' +
-        '<span class="geek-bar-title">&#9889; X-RAY MODE &mdash; Why this prompt works</span>' +
+        '<span class="geek-bar-title">&#9889; X-RAY MODE &mdash; Why these prompts work</span>' +
       '</div>' +
-      legendHtml +
-      '<div class="geek-sections">' + buildAnnotatedView(promptText, allMatches) + '</div>' +
+      tabBarHtml +
+      tabContentHtml +
       '<div class="geek-deeper-wrap">' +
         '<a href="#" class="geek-deeper-link" onclick="event.preventDefault();window.__geekMode.showInception(this)">Go deeper &rarr; see the prompt that drives DangerStorm itself</a>' +
       '</div>';
     return html;
+  }
+
+  function switchTab(btn) {
+    var tabKey = btn.getAttribute('data-tab');
+    var container = btn.closest('#geek-view') || btn.closest('.geek-panel-content');
+    if (!container) return;
+
+    container.querySelectorAll('.geek-tab').forEach(function (t) { t.classList.remove('active'); });
+    container.querySelectorAll('.geek-tab-content').forEach(function (c) { c.classList.remove('active'); });
+    btn.classList.add('active');
+    var target = container.querySelector('.geek-tab-content[data-tab="' + tabKey + '"]');
+    if (target) target.classList.add('active');
   }
 
   // ── Editor-page geek mode (logo click) ─────────────────────────────────
@@ -273,12 +423,11 @@
     const contentEl = document.getElementById('output-1-content');
     if (!output1 || !contentEl) return;
 
-    const text = contentEl.textContent;
     contentEl.style.display = 'none';
 
     const geekView = document.createElement('div');
     geekView.id = 'geek-view';
-    geekView.innerHTML = renderGeekView(text, storedConversation) +
+    geekView.innerHTML = renderGeekView(storedOutputs || { output1: contentEl.textContent }, storedConversation) +
       '<div style="text-align:center;margin-top:8px;">' +
         '<button class="geek-close-btn" onclick="window.__geekMode.exit()">Exit X-ray</button>' +
       '</div>';
@@ -299,18 +448,18 @@
 
   // ── Dashboard overlay mode ─────────────────────────────────────────────
 
-  function launchGeekOverlay(promptText, ideaName, conversation) {
+  function launchGeekOverlay(outputs, ideaName, conversation) {
     var overlay = document.getElementById('geek-overlay');
     if (!overlay) return;
 
     var title = overlay.querySelector('.geek-panel-title');
-    if (title) title.textContent = '⚡ X-RAY MODE — ' + (ideaName || 'Prompt Analysis');
+    if (title) title.textContent = '\u26A1 X-RAY MODE \u2014 ' + (ideaName || 'Prompt Analysis');
 
     var content = overlay.querySelector('.geek-panel-content');
     if (content) {
       var geekView = document.createElement('div');
       geekView.id = 'geek-view';
-      geekView.innerHTML = renderGeekView(promptText, conversation);
+      geekView.innerHTML = renderGeekView(outputs, conversation);
       content.innerHTML = '';
       content.appendChild(geekView);
     }
@@ -330,7 +479,7 @@
 
   // ── Shared helpers ─────────────────────────────────────────────────────
 
-  function buildAnnotatedView(text, allMatches) {
+  function buildDeckAnnotatedView(text, allMatches) {
     const sections = [];
     const firstSlide = text.search(/SLIDE 1/i);
 
@@ -354,8 +503,8 @@
       sections.push({ key: 'intro', text: text.trim() });
     }
 
-    return sections.map(function (section) {
-      const ann = ANNOTATIONS[section.key];
+    return '<div class="geek-sections">' + sections.map(function (section) {
+      const ann = DECK_ANNOTATIONS[section.key];
       var escaped = section.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       if (allMatches && allMatches.length > 0) {
         escaped = highlightPhrases(escaped, section.text, allMatches);
@@ -370,7 +519,27 @@
         '</div>';
       }
       return '<div class="geek-section"><pre class="geek-text">' + escaped + '</pre></div>';
-    }).join('');
+    }).join('') + '</div>';
+  }
+
+  function buildOutputAnnotatedView(outputKey, text, allMatches) {
+    var ann = OUTPUT_ANNOTATIONS[outputKey];
+    var escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    if (allMatches && allMatches.length > 0) {
+      escaped = highlightPhrases(escaped, text, allMatches);
+    }
+
+    var html = '<div class="geek-sections">';
+    html += '<div class="geek-section annotated">' +
+      '<pre class="geek-text">' + escaped + '</pre>';
+    if (ann) {
+      html += '<div class="geek-annotation">' +
+        '<span class="geek-ann-label">' + ann.subtitle + '</span>' +
+        '<p class="geek-ann-note">' + ann.note + '</p>' +
+      '</div>';
+    }
+    html += '</div></div>';
+    return html;
   }
 
   function showInception(linkEl) {
@@ -410,7 +579,8 @@
     exit: exitGeekMode,
     showInception: showInception,
     launchOverlay: launchGeekOverlay,
-    closeOverlay: closeGeekOverlay
+    closeOverlay: closeGeekOverlay,
+    switchTab: switchTab
   };
   window.triggerGeekPulse = triggerPulse;
   window.resetGeekMode = resetGeekMode;
